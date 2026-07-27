@@ -1,99 +1,36 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/tile-ai/TileOPs/main/assets/logo.png" width="350"/>
-  <h1>TileOPs</h1>
-  <p><strong>Spec-driven GPU operator library for LLMs — designed for AI agents to build, evaluate, and optimize</strong></p>
-  <p>Built on <a href="https://github.com/tile-ai/tilelang">TileLang</a></p>
-  <!-- <p>
-    <a href="https://pypi.org/project/tileops/"><img src="https://img.shields.io/badge/PyPI-tileops-1E90FF" alt="PyPI version" height="20"></a>
-  </p> -->
+  <img src="assets/logo.png" width="300" alt="TileOPs-Metax Logo">
+
+  <h1>TileOPs-Metax</h1>
+
   <p>
-    <a href="https://github.com/tile-ai/TileOPs/tree/main/tileops/manifest"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftile-ai%2FTileOPs%2Fstats%2Fmanifest-implemented.json" alt="Spec coverage"></a>
-    <a href="https://github.com/tile-ai/TileOPs/tree/main/benchmarks"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftile-ai%2FTileOPs%2Fstats%2Fmanifest-benchmark.json" alt="Bench coverage"></a>
+    <strong>面向大语言模型、由规范驱动的 GPU 算子库</strong>
   </p>
+
   <p>
-    <a href="#installation"><b>Installation</b></a> |
-    <a href="#quick-start"><b>Quick Start</b></a> |
-    <a href="#documentation"><b>Docs</b></a>
+    <strong>简体中文</strong> |
+    <a href="README.en.md">English</a>
   </p>
 </div>
 
-> **Status**: TileOPs is under active development. APIs may change.
+> **项目状态**：TileOPs-Metax 正在积极开发中，API 可能发生变化。
 
-## Overview
+## 首届开源英才夏令营
 
-TileOPs is a GPU operator library for LLM training and inference, built on [TileLang](https://github.com/tile-ai/tilelang). Beyond providing a growing collection of production-quality operators, TileOPs explores a **spec-driven development model** where AI agents can read declarative operator specifications, generate kernel implementations, and evaluate them against hardware-theoretical performance bounds — with minimal human scaffolding.
+夏令营学员应使用 `summer-camp-2026` 分支，并遵循[算子迁移指南](docs/summer-camp/README.zh-CN.md)，完成算子认领、开发实现、MetaX GPU 验证、Benchmark、Roofline 分析和代码提交。
 
-### Architecture
+## 项目简介
 
-Every operator is split into two layers with a strict boundary:
+TileOPs-Metax 是一个基于[TileLang](https://github.com/tile-ai/tilelang)、面向大语言模型训练和推理的GPU 算子库。项目采用规范驱动的开发模式，帮助开发者和 AI Agent 构建、评估和优化高性能算子。
 
-- **Op** (L2) — stateless Python entry point. Handles validation, dtype casting, and memory layout. CUDA-Graph compatible; `torch.compile(fullgraph=True)` support is declared per op in the manifest.
-- **Kernel** (L1) — TileLang GPU implementation with hardware-specific optimizations (Hopper).
+### 主要特性
 
-This separation keeps user-facing behavior independent of GPU strategy, allowing agents and developers to modify either layer without side effects on the other.
+- **规范驱动**：使用机器可读的 Manifest 定义算子签名和工作负载。
+- **性能评估**：结合 Benchmark 与 Roofline 分析评估 Kernel 性能。
+- **分层设计**：用户接口与硬件优化策略相互独立。
 
-### Key Properties
+## 详细文档
 
-- **Spec-driven** — each operator is declared in a machine-readable manifest (`tileops/manifest/`) that specifies signatures, workloads, and roofline formulas, serving as the entry point for both agent code generation and automated validation
-- **Roofline-evaluated** — kernel performance is measured against Speed-of-Light hardware bounds, not relative baselines
-- **Auto-tuning** — built-in search over tile sizes, pipelines, and scheduling parameters
-- **Lightweight** — depends only on TileLang, PyTorch, and einops
-
-## Installation
-
-TileOPs is under active development and is installed from source; PyPI releases will begin with the first stable release. A CUDA-capable GPU is required.
-
-### Prerequisites
-
-- Python >= 3.10
-- PyTorch >= 2.1, < 2.11 (CI validates 2.10)
-- CUDA Toolkit 12.x
-- NVIDIA GPU: **Hopper** (SM_90)
-- [TileLang](https://github.com/tile-ai/tilelang) >= 0.1.9, < 0.2.0 (CI validates 0.1.11)
-
-### From source
-
-```bash
-git clone https://github.com/tile-ai/TileOPs
-cd TileOPs
-make install    # dev dependencies + pre-commit hooks
-```
-
-> [!NOTE]
-> If CUDA and TileLang are already installed system-wide and you encounter build issues:
-> `PIP_NO_BUILD_ISOLATION=1 pip install -e '.[dev]' -v && pre-commit install`
-
-Verify:
-
-```bash
-python -m pytest tests/ -q    # requires a CUDA GPU
-```
-
-## Quick Start
-
-```python
-import torch
-from tileops.ops import GemmOp
-
-M, N, K = 1024, 1024, 512
-dtype = torch.float16
-
-gemm = GemmOp()  # shapes and dtype are inferred at call time
-
-a = torch.randn(M, K, device="cuda", dtype=dtype)
-b = torch.randn(N, K, device="cuda", dtype=dtype)  # trans_b=True by default
-
-d = gemm(a, b)  # equals a @ b.T
-```
-
-## Documentation
-
-Design docs and development guides are in [`docs/`](docs/). The full API reference and performance tables are published at [TileOPs.github.io](https://github.com/tile-ai/TileOPs.github.io).
-
-## Contributing
-
-See [docs/](docs/) for design docs. Branch and commit conventions are in [`.claude/conventions/types.sh`](.claude/conventions/types.sh).
-
-## License
-
-TileOPs is released under the [MIT License](LICENSE).
+- [查看完整中文说明](README.zh-CN.md)
+- [View the full English README](README.en.md)
+- [查看夏令营算子迁移指南](docs/summer-camp/README.zh-CN.md)
