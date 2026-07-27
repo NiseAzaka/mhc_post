@@ -26,7 +26,7 @@ Kernel 分层；正确性、边界和错误路径测试通过；独立基线 Ben
 ```bash
 git clone --recurse-submodules \
   --branch summer-camp-2026 \
-  https://gitlink.org.cn/Beckylu/TileOPs-Metax.git
+  https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax.git 
 cd TileOPs-Metax
 
 python3 -m venv .venv
