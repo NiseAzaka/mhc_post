@@ -21,7 +21,7 @@
 
 ## 项目简介
 
-TileOPs-Metax 是一个基于[TileLang](https://github.com/tile-ai/tilelang)、面向大语言模型训练和推理的GPU 算子库。项目采用规范驱动的开发模式，帮助开发者和 AI Agent 构建、评估和优化高性能算子。
+TileOPs-Metax 是一个基于 [TileLang](https://github.com/tile-ai/tilelang)、面向大语言模型训练和推理的 GPU 算子库。项目采用规范驱动的开发模式，帮助开发者和 AI Agent 构建、评估和优化高性能算子。
 
 ### 主要特性
 

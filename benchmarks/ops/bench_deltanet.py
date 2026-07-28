@@ -194,6 +194,11 @@ class DeltaNetVsFlaFwdFixture(FixtureBase):
             pytest.param(2, 8192, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
             pytest.param(2, 16384, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
             pytest.param(2, 32768, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.nightly),
+            pytest.param(2, 2048, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 4096, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 8192, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 16384, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 32768, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.nightly),
         ]),
     ]
 
@@ -260,6 +265,10 @@ class DeltaNetVsFlaBwdFixture(FixtureBase):
             pytest.param(2, 2048, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
             pytest.param(2, 8192, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
             pytest.param(2, 16384, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
+            pytest.param(2, 2048, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 4096, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 8192, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 16384, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
         ]),
     ]
 
@@ -347,6 +356,10 @@ class DeltaNetVsFlaFwdBwdFixture(FixtureBase):
             pytest.param(2, 2048, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
             pytest.param(2, 8192, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
             pytest.param(2, 16384, 4, 64, 64, 64, torch.float16, False, marks=pytest.mark.full),
+            pytest.param(2, 2048, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 4096, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 8192, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
+            pytest.param(2, 16384, 4, 64, 64, 64, torch.bfloat16, False, marks=pytest.mark.full),
         ]),
     ]
 

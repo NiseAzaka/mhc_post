@@ -137,6 +137,7 @@ def test_gemm_fp8_bench(
     result_bl = bm.profile(test.ref_program, *inputs)
     BenchmarkReport.record(op, locals(), result_bl, tag="torch-scaled-mm")
 
+    flashinfer = pytest.importorskip("flashinfer", minversion="0.6.6")
     if scale_mode == "per_tensor":
         unsupported_reason = _flashinfer_fp8_per_tensor_unsupported_reason(inputs[0].device)
         if unsupported_reason is not None:

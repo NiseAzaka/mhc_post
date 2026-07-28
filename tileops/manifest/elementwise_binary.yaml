@@ -19,13 +19,13 @@ PreluFwdOp:
     shape_rules:
       # PyTorch prelu: weight is either scalar or per-channel along dim 1
       # for inputs with ndim >= 2; 1-D inputs accept scalar weight only.
-      - "weight.ndim == 0 or (weight.ndim == 1 and (weight.shape[0] == 1 or (input.ndim >= 2 and weight.shape[0] == input.shape[1])))"
-      - "output.shape == input.shape"
+    - "weight.ndim == 0 or (weight.ndim == 1 and (weight.shape[0] == 1 or (input.ndim >= 2 and weight.shape[0] == input.shape[1])))"
+    - "output.shape == input.shape"
 
   workloads:
     # PReLU CNN feature map (per-channel weight)
-    - {input_shape: [16, 256, 56, 56], weight_shape: [256], dtypes: [float16, bfloat16], label: "cnn-feat-per-channel"}
-    - {input_shape: [16, 512, 28, 28], weight_shape: [512], dtypes: [float16, bfloat16], label: "cnn-feat-per-channel-deep"}
+  - {input_shape: [16, 256, 56, 56], weight_shape: [256], dtypes: [float16, bfloat16], label: "cnn-feat-per-channel"}
+  - {input_shape: [16, 512, 28, 28], weight_shape: [512], dtypes: [float16, bfloat16], label: "cnn-feat-per-channel-deep"}
 
   roofline:
     vars:
@@ -39,12 +39,15 @@ PreluFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      prelu: PreluFwdKernel
     op: tileops/ops/elementwise/prelu.py
     test: tests/ops/test_activation.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
+# ---------------------------------------------------------------------------
+# elementwise — two-input parametric ops (prelu, masked_fill)
+# ---------------------------------------------------------------------------
+
 MaskedFillFwdOp:
   ref_api: "torch.Tensor.masked_fill"
   # Primary entry: PyTorch's torch.Tensor.masked_fill(mask, value: Tensor)
@@ -71,12 +74,12 @@ MaskedFillFwdOp:
     shape_rules:
       # Out-of-place masked_fill returns the bidirectional broadcast of
       # input and mask; value is 0-dim.
-      - "value.shape == ()"
-      - "output.shape == broadcast_shapes(input.shape, mask.shape)"
+    - "value.shape == ()"
+    - "output.shape == broadcast_shapes(input.shape, mask.shape)"
 
   workloads:
-    - {input_shape: [4096, 4096], mask_shape: [4096, 4096], value_shape: [], dtypes: [float16, bfloat16, float32], label: "elementwise-16M"}
-    - {input_shape: [16384, 16384], mask_shape: [16384, 16384], value_shape: [], dtypes: [float16, bfloat16], label: "elementwise-256M"}
+  - {input_shape: [4096, 4096], mask_shape: [4096, 4096], value_shape: [], dtypes: [float16, bfloat16, float32], label: "elementwise-16M"}
+  - {input_shape: [16384, 16384], mask_shape: [16384, 16384], value_shape: [], dtypes: [float16, bfloat16], label: "elementwise-256M"}
 
   roofline:
     func: "tileops.perf.formulas.masked_fill_fwd_roofline"
@@ -112,11 +115,11 @@ MaskedFillScalarFwdOp:
       # Out-of-place masked_fill returns the bidirectional broadcast of
       # input and mask; out shape follows that broadcast (verified against
       # ``torch.Tensor.masked_fill`` — input may also be expanded up).
-      - "output.shape == broadcast_shapes(input.shape, mask.shape)"
+    - "output.shape == broadcast_shapes(input.shape, mask.shape)"
 
   workloads:
-    - {input_shape: [4096, 4096], dtypes: [float16, bfloat16, float32], label: "elementwise-16M"}
-    - {input_shape: [16384, 16384], dtypes: [float16, bfloat16], label: "elementwise-256M"}
+  - {input_shape: [4096, 4096], dtypes: [float16, bfloat16, float32], label: "elementwise-16M"}
+  - {input_shape: [16384, 16384], dtypes: [float16, bfloat16], label: "elementwise-256M"}
 
   roofline:
     # Func mode: shared with MaskedFillFwdOp (Tensor-value primary). See
@@ -149,7 +152,7 @@ AddFwdOp:
       alpha: {type: "int | float", default: 1, kw_only: true}
     shape_rules:
       # Output follows PyTorch broadcasting; numel uses the broadcast shape.
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -159,12 +162,11 @@ AddFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      add: AddFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 SubFwdOp:
   ref_api: "torch.sub"
   family: elementwise
@@ -180,7 +182,7 @@ SubFwdOp:
     params:
       alpha: {type: "int | float", default: 1, kw_only: true}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -190,12 +192,11 @@ SubFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      sub: SubFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 MulFwdOp:
   ref_api: "torch.mul"
   family: elementwise
@@ -209,7 +210,7 @@ MulFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -219,12 +220,11 @@ MulFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      mul: MulFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 DivFwdOp:
   ref_api: "torch.div"
   family: elementwise
@@ -240,8 +240,8 @@ DivFwdOp:
     params:
       rounding_mode: {type: "str | None", default: null, kw_only: true}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
-      - "rounding_mode is None or rounding_mode in ('trunc', 'floor')"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "rounding_mode is None or rounding_mode in ('trunc', 'floor')"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -251,12 +251,11 @@ DivFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      div: DivFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 RemainderFwdOp:
   ref_api: "torch.remainder"
   family: elementwise
@@ -270,7 +269,7 @@ RemainderFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -280,12 +279,11 @@ RemainderFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      remainder: RemainderFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 PowFwdOp:
   ref_api: "torch.pow"
   family: elementwise
@@ -299,7 +297,7 @@ PowFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, exponent.shape)"
+    - "output.shape == broadcast_shapes(input.shape, exponent.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], exponent_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -309,12 +307,11 @@ PowFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      pow: PowFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 FloorDivideFwdOp:
   ref_api: "torch.floor_divide"
   family: elementwise
@@ -328,7 +325,7 @@ FloorDivideFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -338,12 +335,11 @@ FloorDivideFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      floor_divide: FloorDivideFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 LerpFwdOp:
   ref_api: "torch.lerp"
   # Scalar-weight variant: PyTorch's torch.lerp also accepts a Tensor
@@ -362,7 +358,7 @@ LerpFwdOp:
     params:
       weight: {type: float, default: 0.5}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, end.shape)"
+    - "output.shape == broadcast_shapes(input.shape, end.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], end_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -372,12 +368,11 @@ LerpFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      lerp: LerpFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 MaximumFwdOp:
   ref_api: "torch.maximum"
   family: elementwise
@@ -391,7 +386,7 @@ MaximumFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -401,12 +396,11 @@ MaximumFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      maximum: MaximumFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 MinimumFwdOp:
   ref_api: "torch.minimum"
   family: elementwise
@@ -420,7 +414,7 @@ MinimumFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -430,12 +424,15 @@ MinimumFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      minimum: MinimumFwdKernel
     op: tileops/ops/elementwise/arithmetic.py
     test: tests/ops/test_binary_arith.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
+# ---------------------------------------------------------------------------
+# elementwise -- binary comparison ops (broadcast, output: bool)
+# ---------------------------------------------------------------------------
+
 EqFwdOp:
   ref_api: "torch.eq"
   family: elementwise
@@ -449,7 +446,7 @@ EqFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -459,12 +456,11 @@ EqFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      eq: EqFwdKernel
     op: tileops/ops/elementwise/comparison.py
     test: tests/ops/test_comparison.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 NeFwdOp:
   ref_api: "torch.ne"
   family: elementwise
@@ -478,7 +474,7 @@ NeFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -488,12 +484,11 @@ NeFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      ne: NeFwdKernel
     op: tileops/ops/elementwise/comparison.py
     test: tests/ops/test_comparison.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 GtFwdOp:
   ref_api: "torch.gt"
   family: elementwise
@@ -507,7 +502,7 @@ GtFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -517,12 +512,11 @@ GtFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      gt: GtFwdKernel
     op: tileops/ops/elementwise/comparison.py
     test: tests/ops/test_comparison.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 LtFwdOp:
   ref_api: "torch.lt"
   family: elementwise
@@ -536,7 +530,7 @@ LtFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -546,12 +540,11 @@ LtFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      lt: LtFwdKernel
     op: tileops/ops/elementwise/comparison.py
     test: tests/ops/test_comparison.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 GeFwdOp:
   ref_api: "torch.ge"
   family: elementwise
@@ -565,7 +558,7 @@ GeFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -575,12 +568,11 @@ GeFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      ge: GeFwdKernel
     op: tileops/ops/elementwise/comparison.py
     test: tests/ops/test_comparison.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 LeFwdOp:
   ref_api: "torch.le"
   family: elementwise
@@ -594,7 +586,7 @@ LeFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [float16, bfloat16, float32], label: hidden-state-prefill}
@@ -604,12 +596,15 @@ LeFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      le: LeFwdKernel
     op: tileops/ops/elementwise/comparison.py
     test: tests/ops/test_comparison.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
+# ---------------------------------------------------------------------------
+# elementwise -- binary logical ops (broadcast, output: bool)
+# ---------------------------------------------------------------------------
+
 LogicalAndFwdOp:
   ref_api: "torch.logical_and"
   family: elementwise
@@ -623,7 +618,7 @@ LogicalAndFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [bool, float16, bfloat16, float32], label: hidden-state-prefill}
@@ -633,12 +628,11 @@ LogicalAndFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      logical_and: LogicalAndFwdKernel
     op: tileops/ops/elementwise/logical.py
     test: tests/ops/test_logical.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 LogicalOrFwdOp:
   ref_api: "torch.logical_or"
   family: elementwise
@@ -652,7 +646,7 @@ LogicalOrFwdOp:
     outputs:
       output: {dtype: "bool"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [bool, float16, bfloat16, float32], label: hidden-state-prefill}
@@ -662,12 +656,15 @@ LogicalOrFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      logical_or: LogicalOrFwdKernel
     op: tileops/ops/elementwise/logical.py
     test: tests/ops/test_logical.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
+# ---------------------------------------------------------------------------
+# elementwise -- binary bitwise ops (broadcast, output: same_as(input))
+# ---------------------------------------------------------------------------
+
 BitwiseAndFwdOp:
   ref_api: "torch.bitwise_and"
   family: elementwise
@@ -681,7 +678,7 @@ BitwiseAndFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [bool, int32, int64], label: hidden-state-prefill}
@@ -691,12 +688,11 @@ BitwiseAndFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      bitwise_and: BitwiseAndFwdKernel
     op: tileops/ops/elementwise/bitwise.py
     test: tests/ops/test_bitwise.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 BitwiseOrFwdOp:
   ref_api: "torch.bitwise_or"
   family: elementwise
@@ -710,7 +706,7 @@ BitwiseOrFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [bool, int32, int64], label: hidden-state-prefill}
@@ -720,12 +716,11 @@ BitwiseOrFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      bitwise_or: BitwiseOrFwdKernel
     op: tileops/ops/elementwise/bitwise.py
     test: tests/ops/test_bitwise.py
     bench: benchmarks/ops/bench_elementwise_manifest.py
     bench_manifest_driven: true
+
 BitwiseXorFwdOp:
   ref_api: "torch.bitwise_xor"
   family: elementwise
@@ -739,7 +734,7 @@ BitwiseXorFwdOp:
     outputs:
       output: {dtype: "same_as(input)"}
     shape_rules:
-      - "output.shape == broadcast_shapes(input.shape, other.shape)"
+    - "output.shape == broadcast_shapes(input.shape, other.shape)"
 
   workloads:
     - {input_shape: [2048, 4096], other_shape: [2048, 4096], dtypes: [bool, int32, int64], label: hidden-state-prefill}
@@ -749,8 +744,6 @@ BitwiseXorFwdOp:
 
   source:
     kernel: tileops/kernels/elementwise.py
-    kernel_map:
-      bitwise_xor: BitwiseXorFwdKernel
     op: tileops/ops/elementwise/bitwise.py
     test: tests/ops/test_bitwise.py
     bench: benchmarks/ops/bench_elementwise_manifest.py

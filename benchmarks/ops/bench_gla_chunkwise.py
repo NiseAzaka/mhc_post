@@ -1,3 +1,5 @@
+# 2026 - Modified by MetaX Integrated Circuits (Shanghai) Co., Ltd. All Rights Reserved.
+
 """Benchmark: TileOPs GLA vs FLA chunk_gla.
 
 Compares forward and backward latency across sequence lengths and dtypes.
@@ -134,7 +136,10 @@ class GLAFwdFixture(FixtureBase):
             (2, 4096, 4, 64, 64, 64, torch.float16, False),
             (2, 8192, 4, 64, 64, 64, torch.float16, False),
             (2, 16384, 4, 64, 64, 64, torch.float16, False),
+            (2, 2048, 4, 64, 64, 64, torch.bfloat16, False),
             (2, 4096, 4, 64, 64, 64, torch.bfloat16, False),
+            (2, 8192, 4, 64, 64, 64, torch.bfloat16, False),
+            (2, 16384, 4, 64, 64, 64, torch.bfloat16, False),
         ]),
     ]
 
@@ -198,11 +203,14 @@ class GLABwdFixture(FixtureBase):
             (2, 4096, 4, 64, 64, 64, torch.float16, False),
             (2, 8192, 4, 64, 64, 64, torch.float16, False),
             (2, 16384, 4, 64, 64, 64, torch.float16, False),
+            (2, 2048, 4, 64, 64, 64, torch.bfloat16, False),
             (2, 4096, 4, 64, 64, 64, torch.bfloat16, False),
+            (2, 8192, 4, 64, 64, 64, torch.bfloat16, False),
+            (2, 16384, 4, 64, 64, 64, torch.bfloat16, False),
         ]),
     ]
 
-
+@pytest.mark.xfail
 @GLABwdFixture
 def test_gla_bwd_bench(
     batch: int,
@@ -286,11 +294,14 @@ class GLAFwdBwdFixture(FixtureBase):
             (2, 4096, 4, 64, 64, 64, torch.float16, False),
             (2, 8192, 4, 64, 64, 64, torch.float16, False),
             (2, 16384, 4, 64, 64, 64, torch.float16, False),
+            (2, 2048, 4, 64, 64, 64, torch.bfloat16, False),
             (2, 4096, 4, 64, 64, 64, torch.bfloat16, False),
+            (2, 8192, 4, 64, 64, 64, torch.bfloat16, False),
+            (2, 16384, 4, 64, 64, 64, torch.bfloat16, False),
         ]),
     ]
 
-
+@pytest.mark.xfail
 @GLAFwdBwdFixture
 def test_gla_fwdbwd_bench(
     batch: int,

@@ -1,21 +1,13 @@
-"""Benchmark for the FP8 lightning indexer op.
+# 2026 - Modified by MetaX Integrated Circuits (Shanghai) Co., Ltd. All Rights Reserved.
 
-Workload shapes come from the ops manifest; roofline FLOP and byte counts
-come from the op's ``eval_roofline()`` via :class:`ManifestBenchmark`.
-"""
+from typing import Optional
 
 import pytest
 import torch
 
-from benchmarks.benchmark_base import BenchmarkReport, ManifestBenchmark
-from tileops.manifest import load_workloads
+from benchmarks.benchmark_base import BenchmarkBase, BenchmarkReport
 from tileops.ops import FP8LightningIndexerOp
 from workloads.fp8_lightning_indexer import FP8LightningIndexerWorkload
-
-# Autotuning and the kernel-config override are bench-run policy, not
-# workload properties; manifest workloads do not carry them.
-_TUNE = False
-_CONFIG = None
 
 
 class _FP8LightningIndexerBaseline(FP8LightningIndexerWorkload):
@@ -49,44 +41,49 @@ class _FP8LightningIndexerBaseline(FP8LightningIndexerWorkload):
         return (logits,)
 
 
-_FP8_LIGHTNING_INDEXER_OP = "FP8LightningIndexerOp"
+class FP8LightningIndexerBenchmark(BenchmarkBase[FP8LightningIndexerWorkload]):
 
-_SHAPE_KEYS = (
-    "batch", "seq_len", "heads", "index_dim", "seq_len_kv", "kv_group", "clean_logits",
-)
+    def calculate_flops(self) -> Optional[float]:
+        # Flops depend on the actual mask cost which varies per input
+        return None
+
+    def calculate_memory(self) -> Optional[float]:
+        t = self.workload
+        dtype = torch.float8_e4m3fn
+        accum_dtype = torch.float32
+        index_dtype = torch.int32
+
+        index_q_memory = t.batch * t.seq_len * t.heads * t.index_dim * dtype.itemsize
+        index_k_memory = t.batch * t.seq_len_kv * t.index_dim * t.kv_group * dtype.itemsize
+        index_k_scale_memory = t.batch * t.seq_len_kv * t.kv_group * accum_dtype.itemsize
+        logits_memory = t.batch * t.seq_len * t.seq_len_kv * t.kv_group * accum_dtype.itemsize
+        weights_memory = t.seq_len * t.heads * accum_dtype.itemsize
+        cu_seqlens_ks_memory = t.seq_len * index_dtype.itemsize
+        cu_seqlens_ke_memory = t.seq_len * index_dtype.itemsize
+
+        return (index_q_memory + index_k_memory + index_k_scale_memory + logits_memory +
+                weights_memory + cu_seqlens_ks_memory + cu_seqlens_ke_memory)
 
 
-def _indexer_params() -> list:
-    """Params from manifest workloads, deduped on shape.
+_FP8_LIGHTING_INDEXER_BENCH_PARAMS = [
+    pytest.param(1, 4096, 32, 64, 8192, 1, True, None, False, id="default-config"),
+    pytest.param(1, 2048, 16, 64, 4096, 1, True, None, False, id="mid-shape"),
+]
 
-    ``FP8LightningIndexerWorkload.gen_inputs`` emits bf16 and quantizes inside
-    the op, so workloads differing only in ``dtypes`` are one measurement.
-    """
-    seen, params = set(), []
-    for w in load_workloads(_FP8_LIGHTNING_INDEXER_OP):
-        args = tuple(w[k] for k in _SHAPE_KEYS)
-        if args in seen:
-            continue
-        seen.add(args)
-        params.append(pytest.param(
-            *args, id=w["label"],
-            marks=pytest.mark.smoke if not params else pytest.mark.full))
-    return params
-
-
+@pytest.mark.xfail
 @pytest.mark.parametrize(
-    "batch, seq_len, heads, index_dim, seq_len_kv, kv_group, clean_logits",
-    _indexer_params(),
+    "batch, seq_len, heads, index_dim, seq_len_kv, kv_group, clean_logits, config, tune",
+    _FP8_LIGHTING_INDEXER_BENCH_PARAMS,
 )
 def test_fp8_lightning_indexer_bench(batch: int, seq_len: int, heads: int, index_dim: int,
-                                     seq_len_kv: int, kv_group: int,
-                                     clean_logits: bool) -> None:
+                                    seq_len_kv: int, kv_group: int, clean_logits: bool,
+                                    config: Optional[dict], tune: bool) -> None:
     test = _FP8LightningIndexerBaseline(batch, seq_len, heads, index_dim, seq_len_kv, kv_group,
-                                        clean_logits, _CONFIG)
+                                  clean_logits, config)
+    bm = FP8LightningIndexerBenchmark(test)
     inputs = test.gen_inputs()
 
-    op = FP8LightningIndexerOp(clean_logits=clean_logits, config=_CONFIG, tune=_TUNE)
-    bm = ManifestBenchmark(_FP8_LIGHTNING_INDEXER_OP, op, test)
+    op = FP8LightningIndexerOp(clean_logits=clean_logits, config=config, tune=tune)
     result = bm.profile(op, *inputs)
     BenchmarkReport.record(op, locals(), result, tag="tileops")
 

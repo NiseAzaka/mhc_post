@@ -35,7 +35,7 @@ TileOPs is a GPU operator library for LLM training and inference, built on [Tile
 Every operator is split into two layers with a strict boundary:
 
 - **Op** (L2) — stateless Python entry point. Handles validation, dtype casting, and memory layout. Compatible with CUDA-Graph and `torch.compile`.
-- **Kernel** (L1) — TileLang GPU implementation with hardware-specific optimizations (Ampere, Hopper).
+- **Kernel** (L1) — TileLang GPU implementation with hardware-specific optimizations. Upstream TileOPs kernels declare their support range in NVIDIA architecture terms (Ampere, Hopper); this repository adds `*_maca.py` implementations for some operators, dispatched at the Op layer via `is_maca()`. See [Operator availability on MetaX C500](docs/summer-camp/README.en.md#12-operator-availability-on-metax-c500).
 
 This separation keeps user-facing behavior independent of GPU strategy, allowing agents and developers to modify either layer without side effects on the other.
 
@@ -48,38 +48,69 @@ This separation keeps user-facing behavior independent of GPU strategy, allowing
 
 ## Installation
 
-TileOPs can be installed from PyPI or built from source. A CUDA-capable GPU is required.
+An MXMACA-capable MetaX GPU is required at runtime.
 
 ### Prerequisites
 
 - Python >= 3.10
-- PyTorch >= 2.1
-- CUDA Toolkit
-- NVIDIA GPU: **Hopper** (SM_90)
-- [TileLang](https://github.com/tile-ai/tilelang) == 0.1.9
+- PyTorch >= 2.1 (MetaX build, e.g. `2.8.0+metax3.7.1.3`)
+- MetaX GPU: **C500**
+- [TileLang](https://github.com/tile-ai/tilelang): on MetaX, use the pre-built MACA version shipped in the container
 
-### From PyPI
+> [!WARNING]
+> **Inside a MetaX container, do not run `make install`, `pip install tileops`, or any pip
+> command that resolves the tilelang dependency.**
+>
+> The container's TileLang is an in-place source build for MACA (e.g.
+> `/opt/tilelang-metax-v0.1.10`), not a pip package — `pip show tilelang` finds nothing.
+> pip therefore treats it as "not installed" and pulls the official **CUDA** wheel from the
+> index into site-packages, shadowing the MACA build so kernels compile for the wrong backend.
+>
+> For the same reason, do not use `python3 -m venv` without `--system-site-packages`: it cuts
+> off the MetaX PyTorch build and the `apache-tvm-ffi` that `libtilelang.so` is ABI-coupled to.
+>
+> Do not pass `-c constraints.txt` either. Those pins target the CUDA CI runner and would
+> downgrade `apache-tvm-ffi` below what the in-place build was compiled against. Such a
+> mismatch is invisible at `import` time and only fails when the first kernel compiles.
+
+### MetaX: use the container's pre-built TileLang
+
+Nothing needs to be installed. Set `PYTHONPATH` and you are ready:
 
 ```bash
-pip install tileops
+# Point at the container's pre-built MACA TileLang, plus this repository root
+export PYTHONPATH=/opt/tilelang-metax-v0.1.10:/path/to/TileOPs-Metax:$PYTHONPATH
 ```
 
-### From source
+`tileops` imports without `pip install`; Manifest validation and tests run directly.
+
+If you do need `tileops` registered in the environment (for example to run scripts from
+outside the repository), `--no-deps` is the only safe form:
 
 ```bash
-git clone https://github.com/tile-ai/TileOPs
-cd TileOPs
-make install    # dev dependencies + pre-commit hooks
+python -m pip install -e . --no-deps --no-build-isolation
 ```
 
-> [!NOTE]
-> If CUDA and TileLang are already installed system-wide and you encounter build issues:
-> `PIP_NO_BUILD_ISOLATION=1 pip install -e '.[dev]' -v && pre-commit install`
+`--no-deps` is the essential part — it stops pip from resolving `tilelang`. The repository's
+CI uses exactly this form in
+[`scripts/ci/install_tileops.sh`](scripts/ci/install_tileops.sh).
 
 Verify:
 
 ```bash
-python -m pytest tests/ -q    # requires a CUDA GPU
+# MetaX GPU status. If the output has a Sliced GPU section, the usable memory and compute
+# are the slice quota, not the whole-card values shown in the first section
+mx-smi
+python --version
+python -c "import torch; print(f'GPU available: {torch.cuda.is_available()}')"
+# PyTorch must be the MetaX build (version string contains 'metax')
+python -c "import torch; print(f'PyTorch {torch.__version__}')"
+# TileLang must come from the container's MACA build, not a pip-installed CUDA wheel.
+# The path should be under /opt/tilelang-metax-*; site-packages means it was overwritten
+python -c "import tilelang; print(tilelang.__version__); print(tilelang.__file__)"
+# The compilation backend must be maca, not cuda
+python -c "from tilelang.utils.target import determine_target; print(determine_target('auto'))"
+python -c "import einops; print('einops OK')"
 ```
 
 ## Quick Start
@@ -89,15 +120,25 @@ import torch
 from tileops.ops import GemmOp
 
 M, N, K = 1024, 1024, 512
-dtype = torch.float16
 
-gemm = GemmOp(M, N, K, dtype=dtype)
+# GemmOp is input-inferred: m/n/k and dtype come from the forward inputs, so the
+# constructor only declares layout. trans_b=False means B is stored [K, N];
+# the default True corresponds to [N, K].
+gemm = GemmOp(trans_a=False, trans_b=False)
 
-A = torch.randn(M, K, device="cuda", dtype=dtype)
-B = torch.randn(K, N, device="cuda", dtype=dtype)
+A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+B = torch.randn(K, N, device="cuda", dtype=torch.float16)
 
-C = gemm(A, B)
+C = gemm(A, B)          # [M, N]
 ```
+
+> [!NOTE]
+> Set `PYTHONPATH` first (see Installation above).
+>
+> On C500, `GemmOp` dispatches through `is_maca()` to
+> `tileops/kernels/gemm_maca.py`. Not every operator has a MACA implementation — before
+> picking an operator or a workload, read
+> [Operator availability on MetaX C500](docs/summer-camp/README.en.md#12-operator-availability-on-metax-c500).
 
 ## Documentation
 

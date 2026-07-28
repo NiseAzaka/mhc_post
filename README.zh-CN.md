@@ -23,18 +23,18 @@
 
 ## 首届开源英才夏令营
 
-夏令营学员应使用 `summer-camp-2026` 分支，并遵循[算子迁移指南](docs/summer-camp/README.md)。该指南规定了算子认领、Manifest/实现双 PR流程、MetaX GPU 验证、Benchmark、Roofline 证据和验收要求。
+夏令营学员应使用 `summer-camp-2026` 分支，并遵循[算子迁移指南](docs/summer-camp/README.md)。该指南规定了算子认领、Manifest/实现双 PR 流程、MetaX GPU 验证、Benchmark、Roofline 证据和验收要求。
 
 ## 概述
 
-TileOPs 是一个基于 [TileLang](https://github.com/tile-ai/tilelang)、面向大语言模型训练和推理的GPU 算子库。除了持续提供可用于生产的算子，TileOPs 还探索一种**规范驱动的开发模式**：AI Agent 可以读取声明式算子规范、生成 Kernel 实现，并依据硬件理论性能上限进行评估，同时尽量减少人工脚手架。
+TileOPs 是一个基于 [TileLang](https://github.com/tile-ai/tilelang)、面向大语言模型训练和推理的 GPU 算子库。除了持续提供可用于生产的算子，TileOPs 还探索一种**规范驱动的开发模式**：AI Agent 可以读取声明式算子规范、生成 Kernel 实现，并依据硬件理论性能上限进行评估，同时尽量减少人工脚手架。
 
 ### 架构
 
 每个算子都严格分为两个层次：
 
 - **Op**（L2）——无状态 Python 入口，负责参数校验、dtype 转换和内存布局，并兼容 CUDA Graph 与 `torch.compile`。
-- **Kernel**（L1）——TileLang GPU 实现，包含针对具体硬件的优化策略（Ampere、Hopper）。
+- **Kernel**（L1）——TileLang GPU 实现，包含针对具体硬件的优化策略。上游 TileOPs 的 Kernel 按 NVIDIA 架构（Ampere、Hopper）声明支持范围；本仓库为部分算子提供 `*_maca.py` 专用实现，由 Op 层通过 `is_maca()` 分派。参见 [MetaX C500 上的算子可用范围](docs/summer-camp/README.zh-CN.md#12-metax-c500-上的算子可用范围)。
 
 这种分层使面向用户的行为与 GPU 策略相互独立，AI Agent 和开发者可以修改其中一层，而不对另一层产生意外影响。
 
@@ -48,38 +48,67 @@ TileOPs 是一个基于 [TileLang](https://github.com/tile-ai/tilelang)、面向
 
 ## 安装
 
-TileOPs 可以从 PyPI 安装，也可以从源码构建。运行时需要支持 CUDA 的 GPU。
+运行时需要支持 MXMACA 的 MetaX GPU。
 
 ### 前置条件
 
 - Python >= 3.10
-- PyTorch >= 2.1
-- CUDA Toolkit
-- NVIDIA GPU：**Hopper**（SM_90）
-- [TileLang](https://github.com/tile-ai/tilelang) == 0.1.9
+- PyTorch >= 2.1（MetaX 定制版，如 `2.8.0+metax3.7.1.3`）
+- MetaX GPU：**C500**
+- [TileLang](https://github.com/tile-ai/tilelang)：MetaX 环境使用容器内预编译的 MACA 版本
 
-### 从 PyPI 安装
+> [!WARNING]
+> **MetaX 容器内不要执行 `make install`、`pip install tileops`，或任何会解析 tilelang 依赖的 pip 命令。**
+>
+> 容器里的 TileLang 是源码就地编译的 MACA 版本（例如 `/opt/tilelang-metax-v0.1.10`），
+> 不是 pip 包（`pip show tilelang` 查不到）。因此 pip 会认为它「未安装」，从镜像源拉取
+> 官方 **CUDA** 构建的 wheel 装进 site-packages，遮蔽 MACA 编译产物，导致 Kernel 编译走错后端。
+>
+> 同理，不要使用不带 `--system-site-packages` 的 `python3 -m venv`，否则会切断 MetaX 定制版
+> PyTorch 和与 `libtilelang.so` ABI 耦合的 `apache-tvm-ffi`。
+>
+> 也不要在 pip 命令中带 `-c constraints.txt`：该文件的钉版面向 CUDA CI 环境，会降级
+> `apache-tvm-ffi`，与容器内编译产物 ABI 不匹配。这类不匹配在 `import` 阶段看不出来，
+> 要到第一次编译 Kernel 时才会失败。
+
+### MetaX 环境：使用容器内预编译的 TileLang
+
+不需要安装任何东西。设置 `PYTHONPATH` 后即可直接使用：
 
 ```bash
-pip install tileops
+# 指向容器内预编译的 MACA 版 TileLang，以及本仓库根目录
+export PYTHONPATH=/opt/tilelang-metax-v0.1.10:/path/to/TileOPs-Metax:$PYTHONPATH
 ```
 
-### 从源码安装
+`tileops` 无需 `pip install` 即可导入，Manifest 校验和测试都能直接运行。
+
+如果确实需要把 `tileops` 注册进环境（例如想在仓库外的目录运行脚本），只能用 `--no-deps`：
 
 ```bash
-git clone https://github.com/tile-ai/TileOPs
-cd TileOPs
-make install    # 开发依赖 + pre-commit hooks
+python -m pip install -e . --no-deps --no-build-isolation
 ```
 
-> [!NOTE]
-> 如果系统已经安装 CUDA 和 TileLang，但构建时遇到问题，请运行：
-> `PIP_NO_BUILD_ISOLATION=1 pip install -e '.[dev]' -v && pre-commit install`
+`--no-deps` 是关键，它让 pip 不去解析 `tilelang` 依赖。仓库 CI 使用的
+[`scripts/ci/install_tileops.sh`](scripts/ci/install_tileops.sh) 就是这个写法。
 
 验证安装：
 
 ```bash
-python -m pytest tests/ -q    # 需要 CUDA GPU
+# 检查沐曦 GPU 状态。注意：若输出含 Sliced GPU 段落，实际可用显存和算力是切片配额，
+# 不是第一段显示的整卡值
+mx-smi
+# 检查 Python 版本
+python --version
+# 检查 PyTorch 是否能识别 GPU
+python -c "import torch; print(f'GPU available: {torch.cuda.is_available()}'); print(f'GPU count: {torch.cuda.device_count()}')"
+# 检查 PyTorch 是 MetaX 定制版（版本号应含 metax）
+python -c "import torch; print(f'PyTorch {torch.__version__}')"
+# 检查 TileLang 来自容器内的 MACA 构建，而不是 pip 装的官方 CUDA 版。
+# 路径应指向 /opt/tilelang-metax-*；若指向 site-packages，说明已被覆盖，需要恢复
+python -c "import tilelang; print(tilelang.__version__); print(tilelang.__file__)"
+# 检查编译后端是 maca 而不是 cuda
+python -c "from tilelang.utils.target import determine_target; print(determine_target('auto'))"
+python -c "import einops; print('einops OK')"
 ```
 
 ## 快速开始
@@ -89,15 +118,23 @@ import torch
 from tileops.ops import GemmOp
 
 M, N, K = 1024, 1024, 512
-dtype = torch.float16
 
-gemm = GemmOp(M, N, K, dtype=dtype)
+# GemmOp 是输入推断的：m/n/k 和 dtype 由 forward 的输入决定，构造时只声明布局。
+# trans_b=False 表示 B 按 [K, N] 存储；默认值 True 对应 [N, K]。
+gemm = GemmOp(trans_a=False, trans_b=False)
 
-A = torch.randn(M, K, device="cuda", dtype=dtype)
-B = torch.randn(K, N, device="cuda", dtype=dtype)
+A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+B = torch.randn(K, N, device="cuda", dtype=torch.float16)
 
-C = gemm(A, B)
+C = gemm(A, B)          # [M, N]
 ```
+
+> [!NOTE]
+> 运行前需要先设置 `PYTHONPATH`（见上文安装小节）。
+>
+> 在 C500 上，`GemmOp` 通过 `is_maca()` 分派到 `tileops/kernels/gemm_maca.py`。
+> 并非所有算子都有 MACA 实现，选择算子和工作负载前请先阅读
+> [MetaX C500 上的算子可用范围](docs/summer-camp/README.zh-CN.md#12-metax-c500-上的算子可用范围)。
 
 ## 文档
 

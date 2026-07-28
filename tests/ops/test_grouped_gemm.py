@@ -103,7 +103,17 @@ def test_grouped_gemm(batch_sum: int, batch_count: int, N: int, K: int, dtype: t
                       transpose_a: bool, transpose_b: bool, tune: bool) -> None:
     test = GroupedGemmTest(batch_sum, batch_count, N, K, dtype, transpose_a, transpose_b)
     op = GroupedGemmOp(transpose_a=transpose_a, transpose_b=transpose_b, tune=tune)
-    test.check(op, *test.gen_inputs())
+    test.check(op, *test.gen_inputs(), atol=5e-4, rtol=5e-3)
+
+
+# Complete variant: forward (NT) + backward dA (NN) + backward dB (TN)
+
+class GroupedGemmCompleteFixture(FixtureBase):
+    PARAMS = [
+        ("batch_sum, batch_count, N, K, dtype, tune", [
+            pytest.param(16384, 4, 4864, 4096, torch.float16, False, marks=pytest.mark.smoke),
+        ]),
+    ]
 
 
 if __name__ == "__main__":
