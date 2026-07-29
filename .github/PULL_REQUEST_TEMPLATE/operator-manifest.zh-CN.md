@@ -5,7 +5,6 @@
 - 小组编号：
 - 小组成员：
 - 算子名称：
-- 算子 ID：
 - 本组算子认领 Issue 链接（请参照 [Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) 创建）：
 
 ## 来源与规范
