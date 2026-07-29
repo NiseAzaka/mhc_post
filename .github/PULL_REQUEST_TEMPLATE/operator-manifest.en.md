@@ -5,7 +5,6 @@
 - Group number:
 - Members:
 - Operator name:
-- Operator ID:
 - Operator claim Issue (create it by following [Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1)):
 
 ## Source and Specification
