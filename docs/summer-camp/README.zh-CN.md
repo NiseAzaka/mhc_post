@@ -214,7 +214,7 @@ subprocess，做 Benchmark 时如遇无输出的 `exit 137`，优先怀疑这个
 ## 2. 认领算子
 
 1. 待迁移算子的统一来源是 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支。在源仓库中选择一个尚未迁入 `TileOPs-Metax` 的算子。
-2. 在本仓库的算子认领 Issue 中留言：小组编号、算子名称、源文件路径和源提交 SHA。同一算子不得重复认领，以最先提交完整信息并经助教确认的留言为准。
+2. 每组参照 [算子认领说明 Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) 创建一个独立的算子认领 Issue，填写小组编号、算子名称、源文件路径和源提交 SHA。认领信息完整、未与其他小组冲突并经助教确认后，认领方才有效；同一算子出现多个认领 Issue 时，以最先提交完整信息并经助教确认的 Issue 为准。
 3. 发现源实现不完整、依赖缺失或迁移范围过大时，立即在 Issue 中说明；不得静默换题。
 
 ## 3. 使用两个 PR 建立信任链
@@ -324,6 +324,8 @@ Benchmark 必须与正确性测试分开，并使用独立基线，通常为 PyT
 ## 7. 提交 PR
 
 ### PR A：Manifest PR
+
+提交 PR A 时，必须使用仓库统一的 [Manifest PR 模板](../../.github/PULL_REQUEST_TEMPLATE/operator-manifest.zh-CN.md)。
 
 PR 标题建议：
 

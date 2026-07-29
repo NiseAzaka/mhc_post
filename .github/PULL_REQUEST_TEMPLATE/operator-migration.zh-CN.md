@@ -19,6 +19,8 @@ PR 标题规范：
 
 算子名称：
 
+算子认领 Issue：
+
 小组：XX 组
 
 成员：XXX、XXX、XXX

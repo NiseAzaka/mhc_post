@@ -20,6 +20,8 @@ operator, main optimization direction, and expected deliverables.
 
 Operator name:
 
+Operator claim Issue:
+
 Group: Group XX
 
 Members: XXX, XXX, XXX
