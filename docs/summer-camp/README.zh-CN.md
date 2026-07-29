@@ -219,31 +219,9 @@ subprocess，做 Benchmark 时如遇无输出的 `exit 137`，优先怀疑这个
 
 ## 3. 使用两个 PR 建立信任链
 
-本节说明两个 PR 的职责和先后关系：PR A 先确定规范，PR B 再完成实现、测试和性能验收；两个 PR 均须链接算子认领 Issue。具体提交格式和检查命令见第 7 节。
+本节说明两个 PR 的职责和先后关系：PR A 先确定规范，PR B 再完成实现、测试和性能验收。PR A 和 PR B 使用同一个 `feat/<operator-id>` 分支，并均须链接本组的算子认领 Issue。具体提交格式和检查命令见第 7 节。
 
-### PR A：Manifest
-
-PR A 用于在实现前确定算子的接口、数据类型、形状规则、工作负载和 Roofline 公式，作为后续实现、测试与 Benchmark 的统一契约。
-
-从 `summer-camp-2026` 创建 `manifest/<operator-id>`：
-
-```bash
-git switch summer-camp-2026
-git pull --ff-only
-git switch -c manifest/<operator-id>
-```
-
-只提交：
-
-- 在 `tileops/manifest/<family>.yaml` 中新增对应算子；仅在没有合适 family 时创建新的 Manifest 文件；
-- Manifest 校验或必要的契约测试；
-- 对输入输出、shape、dtype、工作负载和 Roofline 公式的说明。
-
-新 Manifest 的初始状态必须是 `spec-only`。PR A 必须经过助教或维护者的快速 Review，并在 Manifest 校验通过后合入。PR A 不审核 Kernel、性能或 C500 数据。
-
-### PR B：实现
-
-PR A 合入后，从最新的 `summer-camp-2026` 创建 `feat/<operator-id>`：
+从最新的 `summer-camp-2026` 创建开发分支：
 
 ```bash
 git switch summer-camp-2026
@@ -251,13 +229,39 @@ git pull --ff-only
 git switch -c feat/<operator-id>
 ```
 
-提交：
+### PR A：Manifest
+
+PR A 用于在实现前确定算子的接口、数据类型、形状规则、工作负载和 Roofline 公式，作为后续实现、测试与 Benchmark 的统一契约。
+
+第一阶段只提交：
+
+- 在 `tileops/manifest/<family>.yaml` 中新增对应算子；仅在没有合适 family 时创建新的 Manifest 文件；
+- Manifest 校验或必要的契约测试；
+- 对输入输出、shape、dtype、工作负载和 Roofline 公式的说明。
+
+新 Manifest 的初始状态必须是 `spec-only`。PR A 必须经过助教或维护者的快速 Review，并在 Manifest 校验通过后合入。PR A 不审核 Op、Kernel、性能或 C500 数据。
+
+PR A 合入前，不得在该分支提交实现代码。
+
+### PR B：实现
+
+PR A 合入后，继续使用原来的 `feat/<operator-id>` 分支，并先同步最新的目标分支：
+
+```bash
+git switch feat/<operator-id>
+git fetch origin
+git merge origin/summer-camp-2026
+```
+
+同步完成后提交：
 
 - `tileops/ops/` 下的无状态 Op；
 - `tileops/kernels/` 下的 TileLang Kernel；
 - `tests/` 下的正确性、边界和异常测试；
 - `benchmarks/ops/` 下的独立基线 Benchmark；
 - Manifest 中允许随实现更新的状态、来源和工作负载字段。
+
+完成实现、测试和 C500 性能验证后，再从同一分支创建 PR B。
 
 不要把无关重构、依赖升级或多个算子放进同一个 PR。
 
