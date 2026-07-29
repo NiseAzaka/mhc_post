@@ -23,6 +23,9 @@ A task is complete only when its Manifest has been merged and validates, the Op 
 
 You need Python 3.10+, Git, an available MetaX driver/runtime, and a MetaX GPU. Use the container provided by the organizers whenever possible.
 
+> [!TIP]
+> **Recommended summer-camp online environment:** Rent MetaX C500 compute through the [Gitee AI Compute Marketplace](https://ai.gitee.com/compute) and select the summer-camp image: `PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`. Image availability, pricing, and displayed names are subject to the platform. After creating the instance, complete the environment self-check in Section 1.1 and use `mx-smi` to confirm that the assigned device is a MetaX C500.
+
 > [!WARNING]
 > **Do not run `make install`, `pip install tileops`, `pip install -e '.[dev]'` (without
 > `--no-deps`), and do not create a venv without `--system-site-packages`.**
