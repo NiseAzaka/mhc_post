@@ -224,7 +224,7 @@ from your own implementation.
 ## 2. Claim an Operator
 
 1. All operators must come from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax). Select an operator that has not yet been migrated to `TileOPs-Metax`.
-2. Comment in the operator-claim Issue with your team number, operator name, source file path, and source commit SHA. An operator may not be claimed by multiple teams; the first complete claim confirmed by a teaching assistant takes precedence.
+2. Each team must follow [Operator Claim Instructions Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) to create a separate operator-claim Issue with its team number, operator name, source file path, and source commit SHA. A claim becomes valid only after the information is complete, no conflict exists, and a teaching assistant confirms it; if multiple teams claim the same operator, the first complete Issue confirmed by a teaching assistant takes precedence.
 3. If the source implementation is incomplete, required dependencies are missing, or the migration scope is too large, explain the problem in the Issue immediately. Do not switch operators without notice.
 
 ## 3. Build the Trust Chain with Two PRs
@@ -339,6 +339,8 @@ Do not use the tested implementation as its own baseline, report only the fastes
 This section defines the title, description, template, and pre-submission checks for each PR. See Section 3 for their scope and order. Both PRs must link the operator-claim Issue.
 
 ### PR A: Manifest PR
+
+PR A must use the repository's [Manifest PR Template](../../.github/PULL_REQUEST_TEMPLATE/operator-manifest.en.md).
 
 Recommended title:
 
