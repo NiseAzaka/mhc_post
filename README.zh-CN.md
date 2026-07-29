@@ -25,6 +25,8 @@
 
 夏令营学员应使用 `summer-camp-2026` 分支，并遵循[算子迁移指南](docs/summer-camp/README.md)。该指南规定了算子认领、Manifest/实现双 PR 流程、MetaX GPU 验证、Benchmark、Roofline 证据和验收要求。
 
+推荐通过[模力方舟算力市场](https://ai.gitee.com/compute)租用在线 MetaX C500 算力，并选择夏令营专属镜像：`PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`。具体使用方法和环境自检要求见[详细中文指南](docs/summer-camp/README.zh-CN.md)。
+
 ## 概述
 
 TileOPs 是一个基于 [TileLang](https://github.com/tile-ai/tilelang)、面向大语言模型训练和推理的 GPU 算子库。除了持续提供可用于生产的算子，TileOPs 还探索一种**规范驱动的开发模式**：AI Agent 可以读取声明式算子规范、生成 Kernel 实现，并依据硬件理论性能上限进行评估，同时尽量减少人工脚手架。

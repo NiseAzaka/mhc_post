@@ -13,5 +13,7 @@
 | 8 月 6 日 10:30 前 | 完成阻塞问题修复；11:00 冻结参评版本并确定答辩名单 |
 | 8 月 6 日下午 | 进行成果答辩，展示算子实现、正确性、性能优化和开源价值 |
 
+推荐通过[模力方舟算力市场](https://ai.gitee.com/compute)租用在线 MetaX C500 算力，并选择夏令营专属镜像：`PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`。具体使用方法和环境自检要求见[详细中文指南](README.zh-CN.md)。
+
 - [详细中文指南](README.zh-CN.md)
 - [English](README.en.md)

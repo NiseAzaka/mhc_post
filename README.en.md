@@ -26,6 +26,8 @@
 Summer-camp participants should use the `summer-camp-2026` branch and follow the [Chinese migration guide](docs/summer-camp/README.md). The guide defines operator claiming, the two-PR Manifest/implementation workflow, MetaX GPU
 validation, benchmarking, Roofline evidence, and acceptance criteria.
 
+We recommend renting online MetaX C500 compute through the [Gitee AI Compute Marketplace](https://ai.gitee.com/compute) and selecting the summer-camp image: `PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`. See the [detailed English guide](docs/summer-camp/README.en.md) for setup and environment self-check requirements.
+
 ## Overview
 
 TileOPs is a GPU operator library for LLM training and inference, built on [TileLang](https://github.com/tile-ai/tilelang). Beyond providing a growing collection of production-quality operators, TileOPs explores a **spec-driven development model** where AI agents can read declarative operator specifications, generate kernel implementations, and evaluate them against hardware-theoretical performance bounds — with minimal human scaffolding.

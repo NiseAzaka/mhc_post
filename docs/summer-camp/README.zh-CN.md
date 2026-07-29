@@ -23,6 +23,9 @@
 
 需要 Python 3.10+、Git、可用的 MetaX 驱动/运行时和 MetaX GPU。推荐在筹备组提供的容器中工作。
 
+> [!TIP]
+> **推荐使用夏令营专属在线环境**：通过[模力方舟算力市场](https://ai.gitee.com/compute)租用 MetaX C500 算力，并选择夏令营专属镜像：`PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`。镜像库存、价格及页面名称以平台实际显示为准。创建实例后，仍须按照第 1.1 节完成环境自检，并通过 `mx-smi` 确认实际设备为 MetaX C500。
+
 > [!WARNING]
 > **不要执行 `make install`、`pip install tileops`、`pip install -e '.[dev]'`（不带 `--no-deps`），
 > 也不要创建不带 `--system-site-packages` 的 venv。**
