@@ -229,31 +229,9 @@ from your own implementation.
 
 ## 3. Build the Trust Chain with Two PRs
 
-This section defines the responsibilities and order of the two PRs: PR A establishes the specification, while PR B supplies the implementation, tests, and performance evidence. Both PRs must link the operator-claim Issue. See Section 7 for submission formats and checks.
+This section defines the responsibilities and order of the two PRs: PR A establishes the specification, while PR B supplies the implementation, tests, and performance evidence. PR A and PR B use the same `feat/<operator-id>` branch, and both must link the team's operator-claim Issue. See Section 7 for submission formats and checks.
 
-### PR A: Manifest
-
-PR A defines the operator interface, dtypes, shape rules, workloads, and Roofline formulas before implementation. It is the shared contract for the implementation, tests, and Benchmark.
-
-Create `manifest/<operator-id>` from `summer-camp-2026`:
-
-```bash
-git switch summer-camp-2026
-git pull --ff-only
-git switch -c manifest/<operator-id>
-```
-
-Submit only:
-
-- the new operator entry in `tileops/manifest/<family>.yaml`; create a new Manifest file only when no existing family is appropriate;
-- Manifest validation or necessary contract tests;
-- an explanation of inputs/outputs, shapes, dtypes, workloads, and Roofline formulas.
-
-A new Manifest must start with `status: spec-only`. PR A requires a fast review by a teaching assistant or maintainer and may be merged after Manifest validation passes. PR A does not review the Kernel, performance, or C500 data.
-
-### PR B: Implementation
-
-After PR A is merged, create `feat/<operator-id>` from the latest `summer-camp-2026`:
+Create the development branch from the latest `summer-camp-2026`:
 
 ```bash
 git switch summer-camp-2026
@@ -261,13 +239,39 @@ git pull --ff-only
 git switch -c feat/<operator-id>
 ```
 
-Submit:
+### PR A: Manifest
+
+PR A defines the operator interface, dtypes, shape rules, workloads, and Roofline formulas before implementation. It is the shared contract for the implementation, tests, and Benchmark.
+
+In the first stage, submit only:
+
+- the new operator entry in `tileops/manifest/<family>.yaml`; create a new Manifest file only when no existing family is appropriate;
+- Manifest validation or necessary contract tests;
+- an explanation of inputs/outputs, shapes, dtypes, workloads, and Roofline formulas.
+
+A new Manifest must start with `status: spec-only`. PR A requires a fast review by a teaching assistant or maintainer and may be merged after Manifest validation passes. PR A does not review the Op, Kernel, performance, or C500 data.
+
+Do not commit implementation code to this branch before PR A is merged.
+
+### PR B: Implementation
+
+After PR A is merged, continue using the original `feat/<operator-id>` branch and first synchronize it with the latest target branch:
+
+```bash
+git switch feat/<operator-id>
+git fetch origin
+git merge origin/summer-camp-2026
+```
+
+After synchronization, submit:
 
 - a stateless Op under `tileops/ops/`;
 - a TileLang Kernel under `tileops/kernels/`;
 - correctness, boundary, and error tests under `tests/`;
 - an independent baseline Benchmark under `benchmarks/ops/`;
 - only the Manifest status, provenance, and workload fields that may be updated with the implementation.
+
+After completing the implementation, tests, and C500 performance validation, create PR B from the same branch.
 
 Do not include unrelated refactoring, dependency upgrades, or multiple operators in one PR.
 
