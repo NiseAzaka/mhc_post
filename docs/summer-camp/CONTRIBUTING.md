@@ -2,7 +2,7 @@
 
 Use the trust chain `Manifest → Test → Op/Kernel → Benchmark`.
 
-1. Claim exactly one `待迁移` item in the published task list.
+1. Claim one approved primary operator from the curated task list.
 2. Submit a Manifest-only PR with status `spec-only`.
 3. After the specification is accepted, create an implementation PR.
 4. Add a failing behavioral test before each implementation increment.
