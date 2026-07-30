@@ -19,7 +19,7 @@
 
 夏令营学员应使用 `summer-camp-2026` 分支，并遵循[算子迁移指南](docs/summer-camp/README.zh-CN.md)。
 
-### 任务最简说明
+### 任务说明
 
 学员以小组为单位，从 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 的 `dev` 分支选择一个尚未迁入本仓库的主算子，按照以下流程完成迁移：
 
