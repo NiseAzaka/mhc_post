@@ -326,6 +326,26 @@ Do not use the tested implementation as its own baseline, report only the fastes
 
 This section defines the title, description, template, and pre-submission checks for each PR. See Section 3 for their scope and order. Both PRs must link the operator-claim Issue.
 
+### Project Naming
+
+The project title is used for the presentation and awards, while each PR title identifies a specific operator.
+
+- For a single-operator project, use: `Migration and Optimization of <operator-name> on MetaX C500`.
+- For a multi-operator project, name the project after the operator family or shared function, and identify the primary and additional operators.
+- Each PR title must still name its corresponding operator, following the one-operator-per-PR rule.
+
+Example:
+
+```text
+Project title: Migration and Optimization of Multiple MoE Routing Operators on MetaX C500
+Primary operator: moe_group_count
+Additional operators: moe_normalize_weight, moe_reduce_fused
+
+PR titles:
+[moe_group_count] feat: add routing group-count operator
+[moe_normalize_weight] feat: add weight-normalization operator
+```
+
 ### PR A: Manifest PR
 
 PR A must use the repository's [Manifest PR Template](../../.github/PULL_REQUEST_TEMPLATE/operator-manifest.en.md).

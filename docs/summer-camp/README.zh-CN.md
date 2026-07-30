@@ -320,6 +320,26 @@ Benchmark 必须与正确性测试分开，并使用独立基线，通常为 PyT
 
 ## 7. 提交 PR
 
+### 课题命名
+
+课题名称用于答辩和评奖，PR 标题用于标识具体算子。
+
+- 单算子课题建议命名为：`面向 MetaX C500 的 <算子名> 迁移与优化`。
+- 多算子课题可按算子类别或共同功能命名，并注明主算子和追加算子。
+- 每个 PR 的标题仍须使用对应算子名称，保持“一算子一 PR”。
+
+示例：
+
+```text
+课题名称：面向 MetaX C500 的 MoE 路由多算子迁移与优化
+主算子：moe_group_count
+追加算子：moe_normalize_weight、moe_reduce_fused
+
+PR 标题：
+[moe_group_count] feat: 新增路由分组计数算子
+[moe_normalize_weight] feat: 新增权重归一化算子
+```
+
 ### PR A：Manifest PR
 
 提交 PR A 时，必须使用仓库统一的 [Manifest PR 模板](../../.github/PULL_REQUEST_TEMPLATE/operator-manifest.zh-CN.md)。
