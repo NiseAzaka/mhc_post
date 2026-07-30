@@ -81,8 +81,7 @@ python -m pip install -e . --no-deps --no-build-isolation
 
 选题**之前**必须读这一节，否则可能认领一个在 C500 上根本跑不起来的算子。
 
-**MACA 专用 Kernel 与分派机制。** 本仓库为部分算子提供了 MACA 专用实现，通过
-`tileops/utils/utils.py` 的 `is_maca()` 在 Op 层分派：
+**MACA 专用 Kernel 与分派机制。** 本仓库为部分算子提供了 MACA 专用实现，通过 `tileops/utils/utils.py` 的 `is_maca()` 在 Op 层分派：
 
 ```python
 # tileops/ops/attention/deepseek_dsa.py
@@ -105,12 +104,9 @@ tileops/kernels/deltanet/deltanet_bwd_maca.py
 tileops/kernels/gated_deltanet/gated_deltanet_prefill_maca.py
 ```
 
-**arch 门禁。** C500 上 `torch.cuda.get_device_capability()` 上报 `(8, 0)`，因此
-`get_sm_version()` 返回 `80`。这个数字沿用 NVIDIA SM 编号语义，**与 C500 的实际架构无关**，
-仅用于 Kernel 门禁比对；不要据此推断「C500 相当于 Ampere」。
+**arch 门禁。** C500 上 `torch.cuda.get_device_capability()` 上报 `(8, 0)`，因此`get_sm_version()` 返回 `80`。这个数字沿用 NVIDIA SM 编号语义，**与 C500 的实际架构无关**，仅用于 Kernel 门禁比对；不要据此推断「C500 相当于 Ampere」。
 
-`supported_archs` 不含 `80` 的 Kernel 声明共 20 处（`[90]` 17 处、`[89, 90]` 3 处），
-分布在下列文件：
+`supported_archs` 不含 `80` 的 Kernel 声明共 20 处（`[90]` 17 处、`[89, 90]` 3 处），分布在下列文件：
 
 ```text
 attention/deepseek_dsa_decode.py    attention/deepseek_mla_decode.py
@@ -125,8 +121,7 @@ grouped_gemm/grouped_gemm_persistent_3wg.py
 moe/moe_grouped_gemm_persistent_3wg_fused_act.py
 ```
 
-它们依赖 Hopper 专属特性，例如 warp-specialization barrier intrinsic
-`ptx_init_barrier_thread_count`；强行绕过门禁会在 lowering 阶段失败：
+它们依赖 Hopper 专属特性，例如 warp-specialization barrier intrinsic `ptx_init_barrier_thread_count`；强行绕过门禁会在 lowering 阶段失败：
 
 ```text
 tvm.error.InternalError: Unresolved call ir.Op(name="tirx.ptx_init_barrier_thread_count", ...)
@@ -147,8 +142,7 @@ tvm.error.InternalError: Unresolved call ir.Op(name="tirx.ptx_init_barrier_threa
 ValueError: BmmFp8Kernel is not supported on architecture 80
 ```
 
-注意这条信息只给出 `80` 这个数字，不含设备名，容易让人误以为身处 NVIDIA Ampere 卡。
-在 C500 上看到 `architecture 80` 时，请按上文理解：它只是 `get_sm_version()` 的返回值。
+注意这条信息只给出 `80` 这个数字，不含设备名，容易让人误以为身处 NVIDIA Ampere 卡。在 C500 上看到 `architecture 80` 时，请按上文理解：它只是 `get_sm_version()` 的返回值。
 
 查询方式：
 
@@ -160,8 +154,7 @@ ls tileops/kernels/**/*maca*.py                   # 已有的 MACA 专用 Kernel
 
 为尚无 MACA 实现的算子补一个 `*_maca.py` Kernel 加 `is_maca()` 分派，是合适的迁移选题方向。
 
-**Op 可用不等于任意 shape 可用。** 归约类算子在 C500 上还有实测的形状上限。以
-`SoftmaxFwdOp`（`supported_archs` 含 80，无需 MACA 分派）为例：
+**Op 可用不等于任意 shape 可用。** 归约类算子在 C500 上还有实测的形状上限。以 `SoftmaxFwdOp`（`supported_archs` 含 80，无需 MACA 分派）为例：
 
 | 输入 shape | 结果 |
 |---|---|
@@ -170,15 +163,11 @@ ls tileops/kernels/**/*maca*.py                   # 已有的 MACA 专用 Kernel
 | `(1024, 1536)` | 失败：`no available layout`（layout 推断失败） |
 | `(1024, 2048)` / `(2048, 2048)` / `(4096, 4096)` | 失败：`MACALaunch Error: mcErrorInvalidValue` |
 
-瓶颈在**归约维度**而非行数：行数 8192 可用，归约维度超过 1024 即失败。
-编写测试矩阵和 Benchmark workload 时，请先用小尺寸确认可用范围再放大，
-并把实测到的形状上限写进 PR 证据。
+瓶颈在**归约维度**而非行数：行数 8192 可用，归约维度超过 1024 即失败。编写测试矩阵和 Benchmark workload 时，请先用小尺寸确认可用范围再放大，并把实测到的形状上限写进 PR 证据。
 
 ### 1.3 已知环境问题
 
-**父子进程重复导入 TileLang 会被 SIGKILL。** 在已 `import tilelang` 的进程中再用
-`subprocess` 启动一个也会导入 tilelang 的子进程，整个进程组会被 SIGKILL
-（`exit 137`，**没有任何 traceback 或错误输出**）。
+**父子进程重复导入 TileLang 会被 SIGKILL。** 在已 `import tilelang` 的进程中再用 `subprocess` 启动一个也会导入 tilelang 的子进程，整个进程组会被 SIGKILL（`exit 137`，**没有任何 traceback 或错误输出**）。
 
 因此下列命令在 C500 上会以 `exit 137` 中断，这不是你的代码问题：
 
@@ -206,14 +195,9 @@ print('rc =', r.returncode)
 # 父进程不导入，或子进程不导入，均正常
 ```
 
-`benchmarks/benchmark_base.py` 和 `benchmarks/hardware/memory/hbm_bandwidth.py` 也使用
-subprocess，做 Benchmark 时如遇无输出的 `exit 137`，优先怀疑这个问题。
+`benchmarks/benchmark_base.py` 和 `benchmarks/hardware/memory/hbm_bandwidth.py` 也使用 subprocess，做 Benchmark 时如遇无输出的 `exit 137`，优先怀疑这个问题。
 
-**arch 门禁产生 failed 而非 skipped。** 被门禁拦住的算子，其纯参数校验测试
-（如 `test_bmm_fp8_batch_mismatch_raises`）也会报 `failed` 而不是 `skipped`，
-因为 `ValueError` 在 Op 构造阶段就抛出，测试没走到断言。例如
-`pytest -q -m smoke tests/ops/test_bmm.py` 在 C500 上实测为 `13 failed, 8 passed`。
-提交证据时请注明哪些失败源于环境门禁、哪些源于自己的实现。
+**arch 门禁产生 failed 而非 skipped。** 被门禁拦住的算子，其纯参数校验测试（如 `test_bmm_fp8_batch_mismatch_raises`）也会报 `failed` 而不是 `skipped`，因为 `ValueError` 在 Op 构造阶段就抛出，测试没走到断言。例如 `pytest -q -m smoke tests/ops/test_bmm.py` 在 C500 上实测为 `13 failed, 8 passed`。提交证据时请注明哪些失败源于环境门禁、哪些源于自己的实现。
 
 ## 2. 认领算子
 

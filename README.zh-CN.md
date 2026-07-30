@@ -90,8 +90,7 @@ export PYTHONPATH=/opt/tilelang-metax-v0.1.10:/path/to/TileOPs-Metax:$PYTHONPATH
 python -m pip install -e . --no-deps --no-build-isolation
 ```
 
-`--no-deps` 是关键，它让 pip 不去解析 `tilelang` 依赖。仓库 CI 使用的
-[`scripts/ci/install_tileops.sh`](scripts/ci/install_tileops.sh) 就是这个写法。
+`--no-deps` 是关键，它让 pip 不去解析 `tilelang` 依赖。仓库 CI 使用的 [`scripts/ci/install_tileops.sh`](scripts/ci/install_tileops.sh) 就是这个写法。
 
 验证安装：
 
@@ -140,8 +139,7 @@ C = gemm(A, B)          # [M, N]
 
 ## 文档
 
-设计文档和开发指南位于 [`docs/`](docs/) 目录。完整 API 参考和性能表发布在
-[TileOPs.github.io](https://github.com/tile-ai/TileOPs.github.io)。
+设计文档和开发指南位于 [`docs/`](docs/) 目录。完整 API 参考和性能表发布在 [TileOPs.github.io](https://github.com/tile-ai/TileOPs.github.io)。
 
 ## 参与贡献
 

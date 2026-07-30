@@ -70,8 +70,7 @@ python -m pytest -q benchmarks/tests
 python -m pytest -q tests/test_ops_manifest.py
 ```
 
-If you need to run scripts from outside the repository, `--no-deps` is the only safe install
-form (it stops pip from resolving tilelang):
+If you need to run scripts from outside the repository, `--no-deps` is the only safe install form (it stops pip from resolving tilelang):
 
 ```bash
 python -m pip install -e . --no-deps --no-build-isolation
@@ -83,8 +82,7 @@ If the environment self-check fails, record the operating system, Python version
 
 Read this section **before** claiming an operator, or you may pick one that cannot run on C500 at all.
 
-**MACA-specific kernels and dispatch.** This repository ships MACA implementations for some
-operators, selected at the Op layer through `is_maca()` in `tileops/utils/utils.py`:
+**MACA-specific kernels and dispatch.** This repository ships MACA implementations for some operators, selected at the Op layer through `is_maca()` in `tileops/utils/utils.py`:
 
 ```python
 # tileops/ops/attention/deepseek_dsa.py
@@ -107,10 +105,7 @@ tileops/kernels/deltanet/deltanet_bwd_maca.py
 tileops/kernels/gated_deltanet/gated_deltanet_prefill_maca.py
 ```
 
-**The arch gate.** On C500, `torch.cuda.get_device_capability()` reports `(8, 0)`, so
-`get_sm_version()` returns `80`. That number follows NVIDIA's SM encoding and **says nothing
-about C500's actual architecture** — it only feeds the kernel gate comparison. Do not conclude
-"C500 behaves like Ampere" from it.
+**The arch gate.** On C500, `torch.cuda.get_device_capability()` reports `(8, 0)`, so `get_sm_version()` returns `80`. That number follows NVIDIA's SM encoding and **says nothing about C500's actual architecture** — it only feeds the kernel gate comparison. Do not conclude "C500 behaves like Ampere" from it.
 
 20 kernel declarations exclude `80` (17 with `[90]`, 3 with `[89, 90]`), across these files:
 
@@ -127,8 +122,7 @@ grouped_gemm/grouped_gemm_persistent_3wg.py
 moe/moe_grouped_gemm_persistent_3wg_fused_act.py
 ```
 
-They depend on Hopper-only features such as the warp-specialization barrier intrinsic
-`ptx_init_barrier_thread_count`. Bypassing the gate does not help — lowering then fails:
+They depend on Hopper-only features such as the warp-specialization barrier intrinsic `ptx_init_barrier_thread_count`. Bypassing the gate does not help — lowering then fails:
 
 ```text
 tvm.error.InternalError: Unresolved call ir.Op(name="tirx.ptx_init_barrier_thread_count", ...)
@@ -144,16 +138,13 @@ tvm.error.InternalError: Unresolved call ir.Op(name="tirx.ptx_init_barrier_threa
 > actually dispatches to, not the `supported_archs` of one kernel**. The most reliable check
 > is to construct the Op and run it.
 
-If an Op still raises the following on C500, it has no MACA dispatch path and is not a
-suitable migration target:
+If an Op still raises the following on C500, it has no MACA dispatch path and is not a suitable migration target:
 
 ```text
 ValueError: BmmFp8Kernel is not supported on architecture 80
 ```
 
-Note that this message carries only the number `80` and no device name, which invites the
-misreading that you are on an NVIDIA Ampere card. When you see `architecture 80` on C500,
-read it as described above: it is just the return value of `get_sm_version()`.
+Note that this message carries only the number `80` and no device name, which invites the misreading that you are on an NVIDIA Ampere card. When you see `architecture 80` on C500, read it as described above: it is just the return value of `get_sm_version()`.
 
 To survey:
 
@@ -163,12 +154,9 @@ grep -rn "is_maca" tileops/ops/                   # Ops that already have MACA d
 ls tileops/kernels/**/*maca*.py                   # existing MACA-specific kernels
 ```
 
-Adding a `*_maca.py` kernel plus `is_maca()` dispatch for an operator that lacks one is a
-good migration target.
+Adding a `*_maca.py` kernel plus `is_maca()` dispatch for an operator that lacks one is a good migration target.
 
-**A usable Op does not mean every shape works.** Reduction operators have a measured shape
-ceiling on C500. Using `SoftmaxFwdOp` (whose `supported_archs` includes 80, no MACA dispatch
-needed):
+**A usable Op does not mean every shape works.** Reduction operators have a measured shape ceiling on C500. Using `SoftmaxFwdOp` (whose `supported_archs` includes 80, no MACA dispatch needed):
 
 | Input shape | Result |
 |---|---|
@@ -177,17 +165,11 @@ needed):
 | `(1024, 1536)` | fails: `no available layout` (layout inference) |
 | `(1024, 2048)` / `(2048, 2048)` / `(4096, 4096)` | fails: `MACALaunch Error: mcErrorInvalidValue` |
 
-The limit is on the **reduction dimension**, not the row count: 8192 rows are fine, while a
-reduction dimension above 1024 fails. When writing the test matrix and Benchmark workloads,
-confirm the working range at small sizes before scaling up, and record the measured shape
-ceiling in your PR evidence.
+The limit is on the **reduction dimension**, not the row count: 8192 rows are fine, while a reduction dimension above 1024 fails. When writing the test matrix and Benchmark workloads, confirm the working range at small sizes before scaling up, and record the measured shape ceiling in your PR evidence.
 
 ### 1.3 Known environment issues
 
-**Importing TileLang in both parent and child process triggers SIGKILL.** When a process that
-has already run `import tilelang` uses `subprocess` to start a child that also imports
-tilelang, the whole process group is SIGKILLed (`exit 137`, **with no traceback or error
-output at all**).
+**Importing TileLang in both parent and child process triggers SIGKILL.** When a process that has already run `import tilelang` uses `subprocess` to start a child that also imports tilelang, the whole process group is SIGKILLed (`exit 137`, **with no traceback or error output at all**).
 
 As a result, this command aborts with `exit 137` on C500 — it is not a problem with your code:
 
@@ -215,15 +197,9 @@ print('rc =', r.returncode)
 # Fine when either the parent or the child does not import tilelang
 ```
 
-`benchmarks/benchmark_base.py` and `benchmarks/hardware/memory/hbm_bandwidth.py` also use
-subprocess, so suspect this issue first if benchmarking dies with a silent `exit 137`.
+`benchmarks/benchmark_base.py` and `benchmarks/hardware/memory/hbm_bandwidth.py` also use subprocess, so suspect this issue first if benchmarking dies with a silent `exit 137`.
 
-**The arch gate produces failed, not skipped.** For gated operators, even pure argument
-validation tests (e.g. `test_bmm_fp8_batch_mismatch_raises`) report `failed` rather than
-`skipped`, because the `ValueError` is raised during Op construction before the assertion runs.
-For example `pytest -q -m smoke tests/ops/test_bmm.py` measures `13 failed, 8 passed` on C500.
-When submitting evidence, state which failures come from the environment gate and which come
-from your own implementation.
+**The arch gate produces failed, not skipped.** For gated operators, even pure argument validation tests (e.g. `test_bmm_fp8_batch_mismatch_raises`) report `failed` rather than `skipped`, because the `ValueError` is raised during Op construction before the assertion runs. For example `pytest -q -m smoke tests/ops/test_bmm.py` measures `13 failed, 8 passed` on C500. When submitting evidence, state which failures come from the environment gate and which come from your own implementation.
 
 ## 2. Claim an Operator
 
@@ -315,8 +291,7 @@ python -m pytest -q tests/test_ops_manifest.py
 pre-commit run --all-files
 ```
 
-`tests/test_validate_manifest.py` aborts with `exit 137` on C500 due to a known environment
-issue; see Section 1.3 for how to handle it.
+`tests/test_validate_manifest.py` aborts with `exit 137` on C500 due to a known environment issue; see Section 1.3 for how to handle it.
 
 Record the tested commit SHA, complete commands, exit codes, and concise results in the PR. Do not commit large raw logs.
 

@@ -23,8 +23,7 @@
 
 ## 2026 Summer Camp
 
-Summer-camp participants should use the `summer-camp-2026` branch and follow the [Chinese migration guide](docs/summer-camp/README.md). The guide defines operator claiming, the two-PR Manifest/implementation workflow, MetaX GPU
-validation, benchmarking, Roofline evidence, and acceptance criteria.
+Summer-camp participants should use the `summer-camp-2026` branch and follow the [Chinese migration guide](docs/summer-camp/README.md). The guide defines operator claiming, the two-PR Manifest/implementation workflow, MetaX GPU validation, benchmarking, Roofline evidence, and acceptance criteria.
 
 We recommend renting online MetaX C500 compute through the [Gitee AI Compute Marketplace](https://ai.gitee.com/compute) and selecting the summer-camp image: `PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`. See the [detailed English guide](docs/summer-camp/README.en.md) for setup and environment self-check requirements.
 
@@ -86,16 +85,13 @@ export PYTHONPATH=/opt/tilelang-metax-v0.1.10:/path/to/TileOPs-Metax:$PYTHONPATH
 
 `tileops` imports without `pip install`; Manifest validation and tests run directly.
 
-If you do need `tileops` registered in the environment (for example to run scripts from
-outside the repository), `--no-deps` is the only safe form:
+If you do need `tileops` registered in the environment (for example to run scripts from outside the repository), `--no-deps` is the only safe form:
 
 ```bash
 python -m pip install -e . --no-deps --no-build-isolation
 ```
 
-`--no-deps` is the essential part — it stops pip from resolving `tilelang`. The repository's
-CI uses exactly this form in
-[`scripts/ci/install_tileops.sh`](scripts/ci/install_tileops.sh).
+`--no-deps` is the essential part — it stops pip from resolving `tilelang`. The repository's CI uses exactly this form in [`scripts/ci/install_tileops.sh`](scripts/ci/install_tileops.sh).
 
 Verify:
 
