@@ -227,6 +227,8 @@ from your own implementation.
 2. Each team must follow [Operator Claim Instructions Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) to create a separate operator-claim Issue with its team number, operator name, source file path, and source commit SHA. A claim becomes valid only after the information is complete, no conflict exists, and a teaching assistant confirms it; if multiple teams claim the same operator, the first complete Issue confirmed by a teaching assistant takes precedence.
 3. If the source implementation is incomplete, required dependencies are missing, or the migration scope is too large, explain the problem in the Issue immediately. Do not switch operators without notice.
 
+**As a general rule, priority should be given to operators that have not yet been migrated. An operator with an existing basic implementation may be claimed as an additional optimization task only after a teaching assistant or maintainer confirms that it still has clear room for improvement. Once the primary operator has been fully delivered and confirmed by a teaching assistant, the team may claim and migrate additional operators. Each operator must be claimed separately and submitted through separate PRs. Teams must not reserve multiple operators before starting work on them.**
+
 ## 3. Build the Trust Chain with Two PRs
 
 This section defines the responsibilities and order of the two PRs: PR A establishes the specification, while PR B supplies the implementation, tests, and performance evidence. PR A and PR B use the same `feat/<operator-id>` branch, and both must link the team's operator-claim Issue. See Section 7 for submission formats and checks.
