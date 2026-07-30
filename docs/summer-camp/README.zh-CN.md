@@ -41,12 +41,16 @@
 
 ### 1.1 环境准备与自检
 
-`tileops` 不需要安装，设置 `PYTHONPATH` 后即可直接导入并运行测试：
+`tileops` 不需要安装，设置 `PYTHONPATH` 后即可直接导入并运行测试。
+
+开始前，请先在 GitLink 上 Fork 官方仓库到个人账号，再克隆个人 Fork。以下命令中，`origin` 为个人 Fork，`upstream` 为官方仓库：
 
 ```bash
-git clone https://www.gitlink.org.cn/ccf-ai-infra/TileOPs-Metax.git
+git clone https://www.gitlink.org.cn/<your-account>/TileOPs-Metax.git
 cd TileOPs-Metax
-git switch summer-camp-2026
+git remote add upstream https://www.gitlink.org.cn/ccf-ai-infra/TileOPs-Metax.git
+git fetch upstream
+git switch -c summer-camp-2026 --track upstream/summer-camp-2026
 git pull --ff-only
 
 # 指向容器内预编译的 MACA 版 TileLang（请按容器实际路径调整），以及本仓库根目录
@@ -213,7 +217,7 @@ subprocess，做 Benchmark 时如遇无输出的 `exit 137`，优先怀疑这个
 
 ## 2. 认领算子
 
-1. 待迁移算子的统一来源是 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支。在源仓库中选择一个尚未迁入 `TileOPs-Metax` 的算子。
+1. 待迁移算子的统一来源是 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支。
 2. 每组参照 [算子认领说明 Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) 创建一个独立的算子认领 Issue，填写小组编号、算子名称、源文件路径和源提交 SHA。认领信息完整、未与其他小组冲突并经助教确认后，认领方才有效；同一算子出现多个认领 Issue 时，以最先提交完整信息并经助教确认的 Issue 为准。
 3. 发现源实现不完整、依赖缺失或迁移范围过大时，立即在 Issue 中说明；不得静默换题。
 
@@ -245,13 +249,16 @@ PR A 合入前，不得在该分支提交实现代码。
 
 ### PR B：实现
 
-PR A 合入后，继续使用原来的 `feat/<operator-id>` 分支，并先同步最新的目标分支：
+PR A 合入后，继续使用原来的 `feat/<operator-id>` 分支。由于合入后的 PR A 可能生成新的提交 SHA，需要跳过本地 PR A 提交，将后续实现建立在最新目标分支上：
 
 ```bash
 git switch feat/<operator-id>
-git fetch origin
-git merge origin/summer-camp-2026
+git fetch upstream
+git rebase --onto upstream/summer-camp-2026 <local-pr-a-sha> feat/<operator-id>
+git push --force-with-lease origin feat/<operator-id>
 ```
+
+`<local-pr-a-sha>` 是该分支中提交 PR A 时的 Commit SHA。变基后，目标分支之外应只保留 PR B 的实现提交。
 
 同步完成后提交：
 
