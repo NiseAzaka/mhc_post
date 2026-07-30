@@ -2,7 +2,7 @@
 
 [**简体中文**](README.zh-CN.md) | [English](README.en.md)
 
-本专项面向 2026 年 8 月 3 日至 8 月 6 日线下夏令营。目标是在 MetaX GPU 上，将 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支中适合开放且尚未迁入的 TileLang Kernel，按照 TileOPs 的 Manifest → Test → Op/Kernel → Benchmark 信任链迁入本仓库，并留下可复现、可复用的验证证据。
+本专项面向 2026 年 8 月 3 日至 8 月 6 日线下夏令营。学员从筹备组发布的候选算子清单中选择课题，对具有通用价值的 TileLang Kernel 进行泛化、MetaX C500 适配、测试验证和性能优化，并按照 TileOPs 的 Manifest → Test → Op/Kernel → Benchmark 信任链提交可复现、可维护的开源成果。
 
 > **C500 验收基线**：代码编辑、文档编写、Manifest 校验和格式检查可以在其他环境完成；最终 Kernel 编译与运行、正确性/边界/异常测试、Benchmark、mcProfiler、Roofline 实测及 PR 验收证据必须来自真实沐曦 MetaX C500。
 
@@ -10,7 +10,7 @@
 
 | 时间 | 里程碑 |
 |---|---|
-| 8 月 3 日 | 完成环境验证、阅读规范，并认领一个尚未迁移的算子 |
+| 8 月 3 日 | 完成环境验证、阅读规范，并从候选清单认领一个主算子 |
 | 8 月 4 日 | 提交并通过 Manifest PR 的快速 Review；创建实现 PR，并通过基础正确性测试 |
 | 8 月 5 日 18:00 前 | 实现 PR 达到可 Review 状态，测试和 C500 性能验证证据完整 |
 | 8 月 5 日晚 | 助教完成初步检查，并在 PR 中列出需要修复的阻塞问题 |
@@ -201,11 +201,12 @@ print('rc =', r.returncode)
 
 ## 2. 认领算子
 
-1. 待迁移算子的统一来源是 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支。
-2. 每组参照 [算子认领说明 Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) 创建一个独立的算子认领 Issue，填写小组编号、算子名称、源文件路径和源提交 SHA。认领信息完整、未与其他小组冲突并经助教确认后，认领方才有效；同一算子出现多个认领 Issue 时，以最先提交完整信息并经助教确认的 Issue 为准。
-3. 发现源实现不完整、依赖缺失或迁移范围过大时，立即在 Issue 中说明；不得静默换题。
+1. 可认领算子以筹备组发布的候选算子清单为准。候选算子主要来源于 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支，但源仓库中的算子不会默认全部开放认领。
+2. 每组应优先选择一个中等或较高难度的算子作为主算子。认领前须分析候选算子的父子、包含、依赖和核心实现关系；共享主要实现、核心 Kernel 或大部分测试与 Benchmark 的课题，原则上不得由不同小组分别认领。
+3. 每组参照 [算子认领说明 Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) 创建一个独立的算子认领 Issue，填写小组编号、算子名称、源文件路径和源提交 SHA。认领信息完整、未与其他小组冲突并经助教确认后，认领方才有效；同一算子出现多个认领 Issue 时，以最先提交完整信息并经助教确认的 Issue 为准。
+4. 发现源实现不完整、依赖缺失或迁移范围过大时，立即在 Issue 中说明；不得静默换题。
 
-**原则上优先认领尚未迁入的算子；已有基础实现的算子，仅在助教或维护者确认仍有明确优化空间后，才可作为补充优化任务认领。在保证主算子完整交付并经助教确认后，可继续认领和迁移其他算子。每个算子须单独认领并分别提交 PR，不得提前占用多个尚未开始的算子。**
+**主算子的 Manifest PR 已合入、实现 PR 已通过核心正确性测试且不存在阻塞问题，并经助教确认后，每组最多可追加两个算子，即累计最多认领三个算子。每个算子须单独认领并分别提交 PR，不得提前占用尚未开始的算子。**
 
 ## 3. 使用两个 PR 建立信任链
 

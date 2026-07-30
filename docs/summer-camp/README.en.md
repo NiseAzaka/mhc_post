@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) | [**English**](README.en.md)
 
-This project is designed for the in-person summer camp from August 3 to August 6, 2026. Its goal is to migrate suitable TileLang kernels that have not yet been added to TileOPs from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax). Each migration must follow the TileOPs Manifest → Test → Op/Kernel → Benchmark chain of trust and preserve reproducible, reusable validation evidence.
+This project is designed for the in-person summer camp from August 3 to August 6, 2026. Participants select a project from the curated operator list and generalize, adapt, validate, and optimize reusable TileLang kernels for MetaX C500. Each contribution must follow the TileOPs Manifest → Test → Op/Kernel → Benchmark chain of trust and produce reproducible, maintainable open-source results.
 
 > **C500 acceptance baseline:** Code editing, documentation, Manifest validation, and formatting may run elsewhere. Final Kernel compilation and execution, correctness/boundary/error tests, Benchmark, mcProfiler, Roofline measurements, and PR acceptance evidence must come from a real MetaX C500.
 
@@ -10,7 +10,7 @@ This project is designed for the in-person summer camp from August 3 to August 6
 
 | Time | Milestone |
 |---|---|
-| August 3 | Validate the environment, read the contribution guidelines, and claim an operator that has not yet been migrated |
+| August 3 | Validate the environment, read the contribution guidelines, and claim a primary operator from the curated list |
 | August 4 | Submit and pass the fast review for the Manifest PR; open the implementation PR and pass basic correctness tests |
 | By 18:00 on August 5 | Bring the implementation PR to a review-ready state with complete test results and C500 performance evidence |
 | Evening of August 5 | Teaching assistants complete the initial review and list blocking issues in the PR |
@@ -203,11 +203,12 @@ print('rc =', r.returncode)
 
 ## 2. Claim an Operator
 
-1. All operators must come from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax).
-2. Each team must follow [Operator Claim Instructions Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) to create a separate operator-claim Issue with its team number, operator name, source file path, and source commit SHA. A claim becomes valid only after the information is complete, no conflict exists, and a teaching assistant confirms it; if multiple teams claim the same operator, the first complete Issue confirmed by a teaching assistant takes precedence.
-3. If the source implementation is incomplete, required dependencies are missing, or the migration scope is too large, explain the problem in the Issue immediately. Do not switch operators without notice.
+1. Claimable operators are limited to the curated list published by the organizing team. Candidates primarily come from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax), but operators in the source repository are not automatically open for claiming.
+2. Each team should choose one medium- or high-difficulty operator as its primary operator. Before claiming, analyze parent-child, containment, dependency, and core implementation relationships. Projects that share the main implementation, core Kernel, or most tests and Benchmarks should not be assigned to different teams.
+3. Each team must follow [Operator Claim Instructions Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) to create a separate operator-claim Issue with its team number, operator name, source file path, and source commit SHA. A claim becomes valid only after the information is complete, no conflict exists, and a teaching assistant confirms it; if multiple teams claim the same operator, the first complete Issue confirmed by a teaching assistant takes precedence.
+4. If the source implementation is incomplete, required dependencies are missing, or the migration scope is too large, explain the problem in the Issue immediately. Do not switch operators without notice.
 
-**As a general rule, priority should be given to operators that have not yet been migrated. An operator with an existing basic implementation may be claimed as an additional optimization task only after a teaching assistant or maintainer confirms that it still has clear room for improvement. Once the primary operator has been fully delivered and confirmed by a teaching assistant, the team may claim and migrate additional operators. Each operator must be claimed separately and submitted through separate PRs. Teams must not reserve multiple operators before starting work on them.**
+**After the primary operator's Manifest PR has been merged, its implementation PR has passed the core correctness tests with no blocking issue, and a teaching assistant has confirmed the status, a team may claim up to two additional operators, for a maximum of three operators in total. Each operator must be claimed and submitted separately. Teams must not reserve operators they have not started.**
 
 ## 3. Build the Trust Chain with Two PRs
 
