@@ -42,12 +42,16 @@ You need Python 3.10+, Git, an available MetaX driver/runtime, and a MetaX GPU. 
 
 ### 1.1 Setup and self-check
 
-`tileops` does not need to be installed. Set `PYTHONPATH` and it imports directly:
+`tileops` does not need to be installed. Set `PYTHONPATH` and it imports directly.
+
+Before starting, fork the official repository to your GitLink account, then clone your personal fork. In the commands below, `origin` refers to your personal fork and `upstream` refers to the official repository:
 
 ```bash
-git clone https://www.gitlink.org.cn/ccf-ai-infra/TileOPs-Metax.git
+git clone https://www.gitlink.org.cn/<your-account>/TileOPs-Metax.git
 cd TileOPs-Metax
-git switch summer-camp-2026
+git remote add upstream https://www.gitlink.org.cn/ccf-ai-infra/TileOPs-Metax.git
+git fetch upstream
+git switch -c summer-camp-2026 --track upstream/summer-camp-2026
 git pull --ff-only
 
 # Point at the container's pre-built MACA TileLang (adjust to the actual path), plus this repo
@@ -223,7 +227,7 @@ from your own implementation.
 
 ## 2. Claim an Operator
 
-1. All operators must come from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax). Select an operator that has not yet been migrated to `TileOPs-Metax`.
+1. All operators must come from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax).
 2. Each team must follow [Operator Claim Instructions Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) to create a separate operator-claim Issue with its team number, operator name, source file path, and source commit SHA. A claim becomes valid only after the information is complete, no conflict exists, and a teaching assistant confirms it; if multiple teams claim the same operator, the first complete Issue confirmed by a teaching assistant takes precedence.
 3. If the source implementation is incomplete, required dependencies are missing, or the migration scope is too large, explain the problem in the Issue immediately. Do not switch operators without notice.
 
@@ -257,13 +261,16 @@ Do not commit implementation code to this branch before PR A is merged.
 
 ### PR B: Implementation
 
-After PR A is merged, continue using the original `feat/<operator-id>` branch and first synchronize it with the latest target branch:
+After PR A is merged, continue using the original `feat/<operator-id>` branch. Because merging PR A may produce a new commit SHA, skip the local PR A commit and rebase the subsequent implementation onto the latest target branch:
 
 ```bash
 git switch feat/<operator-id>
-git fetch origin
-git merge origin/summer-camp-2026
+git fetch upstream
+git rebase --onto upstream/summer-camp-2026 <local-pr-a-sha> feat/<operator-id>
+git push --force-with-lease origin feat/<operator-id>
 ```
+
+`<local-pr-a-sha>` is the commit SHA used to submit PR A from this branch. After the rebase, only the PR B implementation commits should remain on top of the target branch.
 
 After synchronization, submit:
 
