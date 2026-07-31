@@ -21,7 +21,7 @@
 
 ### 任务说明
 
-学员以小组为单位，从筹备组发布的候选算子清单中选择一个主算子。候选算子主要来源于 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 的 `dev` 分支，并已初步评估其通用价值、MetaX C500 适配或性能优化空间。学员需要按照 TileOPs 的接口和工程规范完成算子泛化、迁移或优化，而不是简单复制源实现：
+学员以小组为单位，从筹备组发布的[候选算子清单](docs/summer-camp/TileKernels-MACA-待迁移算子盘点.md)中选择一个主算子。候选算子主要来源于 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 的 `dev` 分支，并已初步评估其通用价值、MetaX C500 适配或性能优化空间。学员需要按照 TileOPs 的接口和工程规范完成算子泛化、迁移或优化，而不是简单复制源实现：
 
 1. 认领算子并提交 Manifest；
 2. 完成 Op、TileLang Kernel、正确性及边界测试；

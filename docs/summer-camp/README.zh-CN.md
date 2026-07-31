@@ -201,7 +201,7 @@ print('rc =', r.returncode)
 
 ## 2. 认领算子
 
-1. 可认领算子以筹备组发布的候选算子清单为准。候选算子主要来源于 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支，但源仓库中的算子不会默认全部开放认领。
+1. 可认领算子以筹备组发布的[候选算子清单](TileKernels-MACA-待迁移算子盘点.md)为准。候选算子主要来源于 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 默认 `dev` 分支，但源仓库中的算子不会默认全部开放认领。
 2. 每组应优先选择一个中等或较高难度的算子作为主算子。认领前须分析候选算子的父子、包含、依赖和核心实现关系；共享主要实现、核心 Kernel 或大部分测试与 Benchmark 的课题，原则上不得由不同小组分别认领。
 3. 每组参照 [算子认领说明 Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) 创建一个独立的算子认领 Issue，填写小组编号、算子名称、源文件路径和源提交 SHA。认领信息完整、未与其他小组冲突并经助教确认后，认领方才有效；同一算子出现多个认领 Issue 时，以最先提交完整信息并经助教确认的 Issue 为准。
 4. 发现源实现不完整、依赖缺失或迁移范围过大时，立即在 Issue 中说明；不得静默换题。

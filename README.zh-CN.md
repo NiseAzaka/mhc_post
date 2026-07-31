@@ -23,7 +23,7 @@
 
 ## 首届开源英才夏令营
 
-夏令营学员应使用 `summer-camp-2026` 分支，并遵循[算子迁移指南](docs/summer-camp/README.md)。该指南规定了算子认领、Manifest/实现双 PR 流程、MetaX GPU 验证、Benchmark、Roofline 证据和验收要求。
+夏令营学员应使用 `summer-camp-2026` 分支，并遵循[算子迁移指南](docs/summer-camp/README.md)。该指南规定了算子认领、Manifest/实现双 PR 流程、MetaX GPU 验证、Benchmark、Roofline 证据和验收要求；可认领课题见[候选算子清单](docs/summer-camp/TileKernels-MACA-待迁移算子盘点.md)。
 
 推荐通过[模力方舟算力市场](https://ai.gitee.com/compute)租用在线 MetaX C500 算力，并选择夏令营专属镜像：`PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`。具体使用方法和环境自检要求见[详细中文指南](docs/summer-camp/README.zh-CN.md)。
 

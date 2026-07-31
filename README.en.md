@@ -23,7 +23,7 @@
 
 ## 2026 Summer Camp
 
-Summer-camp participants should use the `summer-camp-2026` branch and follow the [Chinese migration guide](docs/summer-camp/README.md). The guide defines operator claiming, the two-PR Manifest/implementation workflow, MetaX GPU validation, benchmarking, Roofline evidence, and acceptance criteria.
+Summer-camp participants should use the `summer-camp-2026` branch and follow the [Chinese migration guide](docs/summer-camp/README.md). The guide defines operator claiming, the two-PR Manifest/implementation workflow, MetaX GPU validation, benchmarking, Roofline evidence, and acceptance criteria; claimable projects are listed in the [operator migration inventory](docs/summer-camp/TileKernels-MACA-operator-migration-inventory.en.md).
 
 We recommend renting online MetaX C500 compute through the [Gitee AI Compute Marketplace](https://ai.gitee.com/compute) and selecting the summer-camp image: `PyTorch-Agent / 2.8.0 / Python 3.12 / MACA 3.7.1.5`. See the [detailed English guide](docs/summer-camp/README.en.md) for setup and environment self-check requirements.
 

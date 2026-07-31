@@ -203,7 +203,7 @@ print('rc =', r.returncode)
 
 ## 2. Claim an Operator
 
-1. Claimable operators are limited to the curated list published by the organizing team. Candidates primarily come from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax), but operators in the source repository are not automatically open for claiming.
+1. Claimable operators are limited to the [curated list](TileKernels-MACA-operator-migration-inventory.en.md) published by the organizing team. Candidates primarily come from the default `dev` branch of [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax), but operators in the source repository are not automatically open for claiming.
 2. Each team should choose one medium- or high-difficulty operator as its primary operator. Before claiming, analyze parent-child, containment, dependency, and core implementation relationships. Projects that share the main implementation, core Kernel, or most tests and Benchmarks should not be assigned to different teams.
 3. Each team must follow [Operator Claim Instructions Issue #1](https://gitlink.org.cn/ccf-ai-infra/TileOPs-Metax/issues/1) to create a separate operator-claim Issue with its team number, operator name, source file path, and source commit SHA. A claim becomes valid only after the information is complete, no conflict exists, and a teaching assistant confirms it; if multiple teams claim the same operator, the first complete Issue confirmed by a teaching assistant takes precedence.
 4. If the source implementation is incomplete, required dependencies are missing, or the migration scope is too large, explain the problem in the Issue immediately. Do not switch operators without notice.

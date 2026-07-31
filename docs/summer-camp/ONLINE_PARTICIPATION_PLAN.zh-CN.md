@@ -13,7 +13,7 @@
 
 ## 3. 任务要求
 
-学员以小组或个人形式，从届时发布的候选算子清单中选择课题，按照以下流程完成算子泛化、迁移或优化。候选算子主要来源于 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 的 `dev` 分支，但不会默认开放源仓库中的全部算子：
+学员以小组或个人形式，从届时发布的[候选算子清单](TileKernels-MACA-待迁移算子盘点.md)中选择课题，按照以下流程完成算子泛化、迁移或优化。候选算子主要来源于 [`MetaX-MACA/TileKernels-Metax`](https://github.com/MetaX-MACA/TileKernels-Metax) 的 `dev` 分支，但不会默认开放源仓库中的全部算子：
 
 1. 认领算子并提交或完善 Manifest；
 2. 完成或优化 Op、TileLang Kernel、正确性、边界及异常测试；
