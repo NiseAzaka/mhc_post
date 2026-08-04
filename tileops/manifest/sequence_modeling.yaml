@@ -244,20 +244,24 @@ MHCPreOp:
 MHCPostOp:
   ref_api: "none"
   family: sequence_modeling
-  status: implemented
+  status: spec-only
 
+  # Semantics:
+  # x_out[b, n * c_x + c] =
+  #     h_post[b, n] * x_layer_out[b, c] + x_res[b, n * c_x + c].
+  # The multiply and residual add are evaluated in float32, then cast to
+  # bfloat16 for storage.
   signature:
     inputs:
       x_layer_out: {dtype: "bfloat16", shape: "[batch, c_x]"}
       h_post: {dtype: "float32", shape: "[batch, n_expand]"}
-      x_res: {dtype: "bfloat16", shape: "[batch, n_expand * c_x]"}
+      x_res: {dtype: "same_as(x_layer_out)", shape: "[batch, n_expand * c_x]"}
     outputs:
-      x_out: {dtype: "bfloat16", shape: "[batch, n_expand * c_x]"}
+      x_out: {dtype: "same_as(x_layer_out)", shape: "[batch, n_expand * c_x]"}
     shape_rules:
-    - "x_layer_out.ndim == 2 and h_post.ndim == 2 and x_res.ndim == 2"
-    - "h_post.shape[0] == x_layer_out.shape[0]"
-    - "x_res.shape[0] == x_layer_out.shape[0]"
-    - "x_res.shape[1] == h_post.shape[1] * x_layer_out.shape[1]"
+    - "batch > 0"
+    - "n_expand > 0"
+    - "c_x > 0"
 
   workloads:
   - {batch: 1, n_expand: 4, c_x: 1280, dtype: bfloat16, dtypes: [bfloat16], label: "post-small"}
@@ -265,7 +269,11 @@ MHCPostOp:
   - {batch: 4, n_expand: 4, c_x: 2560, dtype: bfloat16, dtypes: [bfloat16], label: "post-large"}
 
   roofline:
-    func: "tileops.perf.formulas.mhc_post_roofline"
+    # One multiply and one add for each output element.
+    flops: "2 * batch * n_expand * c_x"
+    # Read x_layer_out, h_post, and x_res once; write x_out once.
+    # elem_bytes is 2 because x_layer_out is bfloat16; h_post is float32.
+    bytes: "(batch * c_x + 2 * batch * n_expand * c_x) * elem_bytes + batch * n_expand * 4"
 
   source:
     kernel: tileops/kernels/mhc/mhc_post.py
