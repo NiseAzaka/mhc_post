@@ -264,10 +264,36 @@ MHCPostOp:
     - "c_x > 0"
 
   workloads:
+    # Mirrors _MHC_POST_BENCH_PARAMS in benchmarks/ops/bench_mhc.py (15 cases).
+  #
+  # A. mHC paper tiers (arXiv:2512.24880, Table 5: 3B/9B/27B). Legacy ids
+  #    kept for historical profile reports.
   - {batch: 1, n_expand: 4, c_x: 1280, dtype: bfloat16, dtypes: [bfloat16], label: "post-small"}
   - {batch: 2, n_expand: 4, c_x: 1920, dtype: bfloat16, dtypes: [bfloat16], label: "post-medium"}
   - {batch: 4, n_expand: 4, c_x: 2560, dtype: bfloat16, dtypes: [bfloat16], label: "post-large"}
 
+  # B. DeepSeek V4 production scenes (config.json: V4-Flash hidden=4096,
+  #    V4-Pro hidden=7168; hc_mult=4). batch = num_tokens.
+  #    Decode: 32 launch overhead / 128 bandwidth saturation / 512 occupancy
+  #    scaling.
+  - {batch: 32, n_expand: 4, c_x: 4096, dtype: bfloat16, dtypes: [bfloat16], label: "v4-flash-decode-s"}
+  - {batch: 32, n_expand: 4, c_x: 7168, dtype: bfloat16, dtypes: [bfloat16], label: "v4-pro-decode-s"}
+  - {batch: 128, n_expand: 4, c_x: 4096, dtype: bfloat16, dtypes: [bfloat16], label: "v4-flash-decode-m"}
+  - {batch: 128, n_expand: 4, c_x: 7168, dtype: bfloat16, dtypes: [bfloat16], label: "v4-pro-decode-m"}
+  - {batch: 512, n_expand: 4, c_x: 4096, dtype: bfloat16, dtypes: [bfloat16], label: "v4-flash-decode-l"}
+  - {batch: 512, n_expand: 4, c_x: 7168, dtype: bfloat16, dtypes: [bfloat16], label: "v4-pro-decode-l"}
+
+  #    Prefill: 1024 short text / chunked prefill; 4096/8192 long-text
+  #    first-token latency with a large grid. The flash/pro prefill-l pair
+  #    keeps token x hidden volume balanced (8192x4096 ~= 4096x7168).
+  - {batch: 1024, n_expand: 4, c_x: 4096, dtype: bfloat16, dtypes: [bfloat16], label: "v4-flash-prefill-s"}
+  - {batch: 1024, n_expand: 4, c_x: 7168, dtype: bfloat16, dtypes: [bfloat16], label: "v4-pro-prefill-s"}
+  - {batch: 8192, n_expand: 4, c_x: 4096, dtype: bfloat16, dtypes: [bfloat16], label: "v4-flash-prefill-l"}
+  - {batch: 4096, n_expand: 4, c_x: 7168, dtype: bfloat16, dtypes: [bfloat16], label: "v4-pro-prefill-l"}
+
+  # C. Generality: expansion-factor variants (production uses n_expand=4).
+  - {batch: 128, n_expand: 2, c_x: 2048, dtype: bfloat16, dtypes: [bfloat16], label: "expand2-c2048"}
+  - {batch: 128, n_expand: 8, c_x: 1024, dtype: bfloat16, dtypes: [bfloat16], label: "expand8-c1024"}
   roofline:
     # One multiply and one add for each output element.
     flops: "2 * batch * n_expand * c_x"
