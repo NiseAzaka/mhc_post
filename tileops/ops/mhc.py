@@ -5,6 +5,7 @@ import torch
 
 from tileops.kernels.kernel_base import Kernel
 from tileops.kernels.mhc import MHCPostKernel, MHCPreKernel
+from tileops.kernels.mhc.mhc_post import _mhc_post_compile_default
 
 from .op_base import Op
 
@@ -122,11 +123,52 @@ class MHCPostOp(Op):
             )
         return self._kernel_cache[key]
 
+    def _validate_dtypes(
+        self,
+        x_layer_out: torch.Tensor,
+        h_post: torch.Tensor,
+        x_res: torch.Tensor,
+    ) -> None:
+        """Manifest dtype contract: x_layer_out/x_res bf16, h_post fp32."""
+        for name, tensor, expected in (
+            ("x_layer_out", x_layer_out, torch.bfloat16),
+            ("h_post", h_post, torch.float32),
+            ("x_res", x_res, torch.bfloat16),
+        ):
+            if tensor.dtype != expected:
+                raise ValueError(
+                    f"input '{name}' expected {expected}, got {tensor.dtype}"
+                )
+
     def forward(self, x_layer_out: torch.Tensor, h_post: torch.Tensor,
                 x_res: torch.Tensor) -> torch.Tensor:
 
+        if torch.compiler.is_compiling():
+            # The Manifest-generated validator is authoritative for eager
+            # calls, but its synthesized ``locals()`` lookup is not traceable
+            # by Dynamo. Mirror this op's fixed Manifest dtype contract while
+            # tracing so a cold ``fullgraph=True`` call remains one graph.
+            if x_layer_out.dtype != torch.bfloat16:
+                raise ValueError("MHCPostOp x_layer_out must be torch.bfloat16")
+            if h_post.dtype != torch.float32:
+                raise ValueError("MHCPostOp h_post must be torch.float32")
+            if x_res.dtype != torch.bfloat16:
+                raise ValueError("MHCPostOp x_res must be torch.bfloat16")
+        else:
+            self._validate_dtypes(x_layer_out, h_post, x_res)
         if x_layer_out.ndim != 2 or h_post.ndim != 2 or x_res.ndim != 2:
             raise ValueError("MHCPostOp expects x_layer_out/h_post/x_res to be 2D tensors")
+        if h_post.device != x_layer_out.device or x_res.device != x_layer_out.device:
+            raise ValueError("MHCPostOp inputs must be on the same device")
+        if not x_layer_out.is_cuda or not h_post.is_cuda or not x_res.is_cuda:
+            raise ValueError("MHCPostOp inputs must be CUDA/MACA tensors")
+        for name, tensor in (
+            ("x_layer_out", x_layer_out),
+            ("h_post", h_post),
+            ("x_res", x_res),
+        ):
+            if not tensor.is_contiguous():
+                raise ValueError(f"{name} must be contiguous")
         batch, c_x = x_layer_out.shape
         if h_post.shape[0] != batch or x_res.shape[0] != batch:
             raise ValueError("MHCPostOp inputs must have matching batch dimensions")
@@ -135,13 +177,22 @@ class MHCPostOp(Op):
             raise ValueError(
                 f"x_res.shape[1] must equal n_expand * c_x={n_expand * c_x}, got {x_res.shape[1]}"
             )
-        if x_res.dtype != x_layer_out.dtype:
-            raise ValueError(
-                f"x_res.dtype must match x_layer_out.dtype ({x_layer_out.dtype}), got {x_res.dtype}"
-            )
         self.batch = batch
         self.n_expand = n_expand
         self.c_x = c_x
         self.dtype = x_layer_out.dtype
-        self.kernel = self._get_kernel(batch, n_expand, c_x, x_layer_out.dtype, x_layer_out.device.index)
-        return self.kernel(x_layer_out, h_post, x_res)
+        if batch == 0 or n_expand == 0 or c_x == 0:
+            return torch.empty_like(x_res)
+
+        if torch.compiler.is_compiling():
+            return _mhc_post_compile_default(x_layer_out, h_post, x_res)
+
+        kernel = self._get_kernel(
+            batch,
+            n_expand,
+            c_x,
+            x_layer_out.dtype,
+            x_layer_out.device.index,
+        )
+        self.kernel = kernel
+        return kernel(x_layer_out, h_post, x_res)
