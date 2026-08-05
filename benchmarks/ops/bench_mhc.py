@@ -1,4 +1,15 @@
-"""Benchmarks for the MHC pre/post ops."""
+"""Benchmarks for the MHC pre/post ops.
+
+Production shapes follow DeepSeek V4 (arXiv:2606.19348) and the mHC paper
+(arXiv:2512.24880):
+
+  - DeepSeek-V4-Pro   hidden_size=7168, hc_mult=4 (config.json)
+  - DeepSeek-V4-Flash hidden_size=4096, hc_mult=4 (config.json)
+  - mHC paper Table 5: Dimension 1280/1920/2560 (3B/9B/27B); sinkhorn 20 iters.
+  - batch = num_tokens in production: Decode 32/128/512, Prefill 1024/4096/8192.
+Kernel constraint: c_x must be a multiple of 64 (block_C tiles of 64/128);
+7168 and 4096 both satisfy this (7168 = 56*128, 4096 = 32*128).
+"""
 
 import math
 from typing import Optional
@@ -122,19 +133,46 @@ class MHCPostBenchmark(BenchmarkBase[MHCPostTest]):
 
     def calculate_flops(self) -> Optional[float]:
         t = self.workload
-        flops = 2 * t.batch * (
-            t.n_expand * t.n_expand * t.c_x * t.c_x + t.n_expand * t.c_x)
-        return flops
+        # Post-operator is element-wise: x_out = h_post @ x_layer_out + x_res,
+        # where h_post [n, n] @ x_layer_out [n, c_x] is an n x n x c_x FMA and
+        # the broadcast add of x_res is another n x c_x FMA.
+        # => 2 * batch * n * c_x (matches perf/formulas.py:mhc_post_roofline).
+        return 2 * t.batch * t.n_expand * t.c_x
 
     def calculate_memory(self) -> Optional[float]:
         t = self.workload
-        return (t.n_expand * 2 + 1) * t.c_x
+        # x_layer_out [batch, n*c_x] + h_post [batch, n] + x_res [batch, n*c_x]
+        # + x_out [batch, n*c_x]. batch was previously missing from this term.
+        return (t.n_expand * 2 + 1) * t.c_x * t.batch
 
 
 _MHC_POST_BENCH_PARAMS = [
+    # Same production shape set as MHCPreOp (see _MHC_PRE_BENCH_PARAMS).
     pytest.param(1, 4, 1280, torch.bfloat16, True, id="small"),
     pytest.param(2, 4, 1920, torch.bfloat16, True, id="medium"),
     pytest.param(4, 4, 2560, torch.bfloat16, True, id="large"),
+    pytest.param(32, 4, 4096, torch.bfloat16, True, id="v4-flash-decode-s"),
+    pytest.param(32, 4, 7168, torch.bfloat16, True, id="v4-pro-decode-s"),
+    pytest.param(128, 4, 4096, torch.bfloat16, True, marks=pytest.mark.full,
+                 id="v4-flash-decode-m"),
+    pytest.param(128, 4, 7168, torch.bfloat16, True, marks=pytest.mark.full,
+                 id="v4-pro-decode-m"),
+    pytest.param(512, 4, 4096, torch.bfloat16, True, marks=pytest.mark.full,
+                 id="v4-flash-decode-l"),
+    pytest.param(512, 4, 7168, torch.bfloat16, True, marks=pytest.mark.full,
+                 id="v4-pro-decode-l"),
+    pytest.param(1024, 4, 4096, torch.bfloat16, True, marks=pytest.mark.full,
+                 id="v4-flash-prefill-s"),
+    pytest.param(1024, 4, 7168, torch.bfloat16, True, marks=pytest.mark.full,
+                 id="v4-pro-prefill-s"),
+    pytest.param(8192, 4, 4096, torch.bfloat16, True, marks=pytest.mark.nightly,
+                 id="v4-flash-prefill-l"),
+    pytest.param(4096, 4, 7168, torch.bfloat16, True, marks=pytest.mark.nightly,
+                 id="v4-pro-prefill-l"),
+    pytest.param(128, 2, 2048, torch.bfloat16, True, marks=pytest.mark.nightly,
+                 id="expand2-c2048"),
+    pytest.param(128, 8, 1024, torch.bfloat16, True, marks=pytest.mark.nightly,
+                 id="expand8-c1024"),
 ]
 
 
