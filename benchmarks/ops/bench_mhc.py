@@ -133,17 +133,22 @@ class MHCPostBenchmark(BenchmarkBase[MHCPostTest]):
 
     def calculate_flops(self) -> Optional[float]:
         t = self.workload
-        # Post-operator is element-wise: x_out = h_post @ x_layer_out + x_res,
-        # where h_post [n, n] @ x_layer_out [n, c_x] is an n x n x c_x FMA and
-        # the broadcast add of x_res is another n x c_x FMA.
+        # Post is an element-wise outer product plus residual: each of the
+        # batch*n_expand*c_x outputs performs one multiply and one add.
         # => 2 * batch * n * c_x (matches perf/formulas.py:mhc_post_roofline).
         return 2 * t.batch * t.n_expand * t.c_x
 
     def calculate_memory(self) -> Optional[float]:
         t = self.workload
-        # x_layer_out [batch, n*c_x] + h_post [batch, n] + x_res [batch, n*c_x]
-        # + x_out [batch, n*c_x]. batch was previously missing from this term.
-        return (t.n_expand * 2 + 1) * t.c_x * t.batch
+        # Logical minimum traffic in bytes:
+        # x_layer_out [batch, c_x] and x_res/x_out [batch, n_expand*c_x]
+        # use workload dtype; h_post [batch, n_expand] is always float32.
+        x_bytes = t.dtype.itemsize
+        return t.batch * (
+            t.c_x * x_bytes
+            + t.n_expand * 4
+            + 2 * t.n_expand * t.c_x * x_bytes
+        )
 
 
 _MHC_POST_BENCH_PARAMS = [
