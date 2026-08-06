@@ -244,7 +244,7 @@ MHCPreOp:
 MHCPostOp:
   ref_api: "none"
   family: sequence_modeling
-  status: spec-only
+  status: implemented
 
   # Semantics:
   # x_out[b, n * c_x + c] =
@@ -295,11 +295,7 @@ MHCPostOp:
   - {batch: 128, n_expand: 2, c_x: 2048, dtype: bfloat16, dtypes: [bfloat16], label: "expand2-c2048"}
   - {batch: 128, n_expand: 8, c_x: 1024, dtype: bfloat16, dtypes: [bfloat16], label: "expand8-c1024"}
   roofline:
-    # One multiply and one add for each output element.
-    flops: "2 * batch * n_expand * c_x"
-    # Read x_layer_out, h_post, and x_res once; write x_out once.
-    # elem_bytes is 2 because x_layer_out is bfloat16; h_post is float32.
-    bytes: "(batch * c_x + 2 * batch * n_expand * c_x) * elem_bytes + batch * n_expand * 4"
+    func: "tileops.perf.formulas.mhc_post_roofline"
 
   source:
     kernel: tileops/kernels/mhc/mhc_post.py
