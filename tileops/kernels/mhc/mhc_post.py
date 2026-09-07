@@ -53,12 +53,13 @@ def _build_mhc_post_kernel(
                 x_res: T.Tensor([batch, n_expand * c_x], x_dtype),
                 x_out: T.Tensor([batch, n_expand * c_x], x_dtype),
         ):
+            # 同 all-N4 路径：C tile 放 blockIdx.x（最快变化），摊平 VL1 partition
             with T.Kernel(
-                    T.ceildiv(batch, block_x_b),
-                    n_expand,
                     T.ceildiv(c_x, block_C),
+                    n_expand,
+                    T.ceildiv(batch, block_x_b),
                     threads=threads,
-            ) as (bx, bn, by):
+            ) as (by, bn, bx):
 
                 # Keep C as a grid dimension: each CTA owns one C tile, which
                 # preserves the block-level parallelism that the 13:05
@@ -151,11 +152,17 @@ def _mhc_post_all_n4_kernel(
                 x_res: T.Tensor([batch, n_expand * c_x], x_dtype),
                 x_out: T.Tensor([batch, n_expand * c_x], x_dtype),
         ):
+            # grid 维度顺序：把 C tile 放在变化最快的 blockIdx.x。
+            # 1) VL1 partition 由 C tile 决定(bit[8:7] = (by*128)>>7 & 3)，
+            #    若 batch 最快变化，同一时刻活跃的 block 几乎都是同一 by，
+            #    请求会集中在一个 partition（实测 pt0+pt2=85.9%）；
+            # 2) 相邻 blockIdx.x 的地址差 = block_C*2 字节，天然连续，
+            #    比 batch 最快变化时跨越 batch 步长更利于 DRAM 行局部性。
             with T.Kernel(
-                    T.ceildiv(batch, block_x_b),
                     T.ceildiv(c_x, block_C),
+                    T.ceildiv(batch, block_x_b),
                     threads=threads,
-            ) as (bx, by):
+            ) as (by, bx):
                 h_post_shared = T.alloc_shared([block_x_b, n_expand], dtype)
                 x_layer_out_shared = T.alloc_shared([block_x_b, block_C], dtype)
 
@@ -297,7 +304,9 @@ class MHCPostKernel(Kernel):
         # grid and tune only real knobs; num_stages is fixed to 1 for
         # signature/config compatibility (no software-pipelined C loop).
         block_x_b = [1, 8, 64]
-        block_C = [64, 128]
+        # 256: 更大的 C tile 能减少 block 数与 h_post 的重复加载
+        #      （h_post 总加载量 = batch * (c_x/block_C) * N * 4B，与 block_C 成反比）
+        block_C = [64, 128, 256]
         num_stages = [1]
         threads = [128, 256]
         _configs = list(itertools.product(block_x_b, block_C, num_stages, threads))
