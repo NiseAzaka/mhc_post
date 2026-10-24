@@ -144,6 +144,9 @@ def _mhc_post_all_n4_kernel(
         # num_stages is accepted for ABI/config compatibility only.
         _ = num_stages
         vectorized = (batch % block_x_b == 0) and (c_x % block_C == 0)
+        # 全 fragment 路径：h_post / x_layer_out / x_res / x_out 全部走寄存器
+        # 仅在 block_x_b==1 时启用（该形态已实测：14.38us @bc=256，比 shared 快 1.5%）
+        use_frag = vectorized and (block_x_b == 1)
 
         @T.prim_func
         def mhc_post(
@@ -163,36 +166,54 @@ def _mhc_post_all_n4_kernel(
                     T.ceildiv(batch, block_x_b),
                     threads=threads,
             ) as (by, bx):
-                h_post_shared = T.alloc_shared([block_x_b, n_expand], dtype)
-                x_layer_out_shared = T.alloc_shared([block_x_b, block_C], dtype)
+                if use_frag:
+                    h_frag = T.alloc_fragment([n_expand], dtype)
+                    xl_frag = T.alloc_fragment([block_C], dtype)
+                    xr_frag = T.alloc_fragment([n_expand, block_C], dtype)
+                    xo_frag = T.alloc_fragment([n_expand, block_C], dtype)
 
-                for i, j in T.Parallel(block_x_b, n_expand):
-                    if bx * block_x_b + i < batch:
-                        h_post_shared[i, j] = h_post[bx * block_x_b + i, j]
-
-                if vectorized:
-                    T.copy(
-                        x_layer_out[bx * block_x_b:(bx + 1) * block_x_b,
-                                    by * block_C:(by + 1) * block_C],
-                        x_layer_out_shared,
-                    )
+                    for j in T.Parallel(n_expand):
+                        h_frag[j] = h_post[bx, j]
+                    T.copy(x_layer_out[bx, by * block_C:(by + 1) * block_C], xl_frag)
+                    for n in range(n_expand):
+                        T.copy(x_res[bx, n * c_x + by * block_C:
+                                     n * c_x + (by + 1) * block_C], xr_frag[n, :])
+                    for j, k in T.Parallel(n_expand, block_C):
+                        xo_frag[j, k] = h_frag[j] * xl_frag[k] + xr_frag[j, k]
+                    for n in range(n_expand):
+                        T.copy(xo_frag[n, :], x_out[bx, n * c_x + by * block_C:
+                                                    n * c_x + (by + 1) * block_C])
                 else:
-                    for i, j in T.Parallel(block_x_b, block_C):
-                        c_idx = by * block_C + j
+                    h_post_shared = T.alloc_shared([block_x_b, n_expand], dtype)
+                    x_layer_out_shared = T.alloc_shared([block_x_b, block_C], dtype)
+
+                    for i, j in T.Parallel(block_x_b, n_expand):
+                        if bx * block_x_b + i < batch:
+                            h_post_shared[i, j] = h_post[bx * block_x_b + i, j]
+
+                    if vectorized:
+                        T.copy(
+                            x_layer_out[bx * block_x_b:(bx + 1) * block_x_b,
+                                        by * block_C:(by + 1) * block_C],
+                            x_layer_out_shared,
+                        )
+                    else:
+                        for i, j in T.Parallel(block_x_b, block_C):
+                            c_idx = by * block_C + j
+                            b_idx = bx * block_x_b + i
+                            if b_idx < batch:
+                                if c_idx < c_x:
+                                    x_layer_out_shared[i, j] = x_layer_out[b_idx, c_idx]
+
+                    for i, j, k in T.Parallel(block_x_b, n_expand, block_C):
+                        c_idx = by * block_C + k
                         b_idx = bx * block_x_b + i
                         if b_idx < batch:
                             if c_idx < c_x:
-                                x_layer_out_shared[i, j] = x_layer_out[b_idx, c_idx]
-
-                for i, j, k in T.Parallel(block_x_b, n_expand, block_C):
-                    c_idx = by * block_C + k
-                    b_idx = bx * block_x_b + i
-                    if b_idx < batch:
-                        if c_idx < c_x:
-                            x_out[b_idx, j * c_x + c_idx] = (
-                                h_post_shared[i, j] * x_layer_out_shared[i, k]
-                                + T.cast(x_res[b_idx, j * c_x + c_idx], dtype)
-                            )
+                                x_out[b_idx, j * c_x + c_idx] = (
+                                    h_post_shared[i, j] * x_layer_out_shared[i, k]
+                                    + T.cast(x_res[b_idx, j * c_x + c_idx], dtype)
+                                )
 
         return mhc_post
 
@@ -306,7 +327,7 @@ class MHCPostKernel(Kernel):
         block_x_b = [1, 8, 64]
         # 256: 更大的 C tile 能减少 block 数与 h_post 的重复加载
         #      （h_post 总加载量 = batch * (c_x/block_C) * N * 4B，与 block_C 成反比）
-        block_C = [64, 128, 256]
+        block_C = [64, 128, 256, 512, 1024]
         num_stages = [1]
         threads = [128, 256]
         _configs = list(itertools.product(block_x_b, block_C, num_stages, threads))
